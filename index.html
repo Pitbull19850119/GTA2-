@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -7,6 +7,10 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GTA2">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" href="icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#07070c">
   <title>GTA2 Pocket</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -348,7 +352,7 @@
           <button class="btn ghost" type="button" id="pick-local">GTA2.exe wählen</button></div>
           <ol class="steps">
             <li><b>Automatisch:</b> „Spielen“ lädt die Spieldaten einmalig vom Internet Archive. Das kann je nach Server 10&nbsp;–&nbsp;70&nbsp;Minuten dauern. Seite offen und Display an lassen.</li>
-            <li><b>Schneller:</b> Datei <a href="https://archive.org/download/gta2_rockstar-classics/GTA2INSTALLER.exe" target="_blank" rel="noopener">GTA2INSTALLER.exe herunterladen</a> (362&nbsp;MB, offizielle Rockstar-Freeware), z.&nbsp;B. am PC, dann per AirDrop/iCloud aufs Gerät und hier auf „GTA2.exe wählen“ tippen. Entpacken dauert ca. 1 Minute.</li>
+            <li><b>Schneller:</b> Datei <a href="https://archive.org/download/gta2_20200403/GTA2.exe" download>GTA2.exe direkt herunterladen</a> (362&nbsp;MB, offizielle Rockstar-Freeware), z.&nbsp;B. am PC, dann per AirDrop/iCloud aufs Gerät und hier auf „GTA2.exe wählen“ tippen. Entpacken dauert ca. 1 Minute.</li>
             <li>Danach bleibt alles im Browser gespeichert – beim nächsten Mal sofort spielen.</li>
           </ol>
           <div id="continue-root" hidden></div>
@@ -567,6 +571,7 @@
        language as soon as the page's markup is parsed. -->
   <script>window.GTA2_NO_DIRECT_DOWNLOAD=false;</script>
   <script src="touch.js" defer></script>
+  <script>if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
   <script>addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("pick-local");b&&b.addEventListener("click",()=>document.getElementById("installer-file").click());});</script>
   <script type="module" src="shell.js?v=11ff9757d2"></script>
 </body>

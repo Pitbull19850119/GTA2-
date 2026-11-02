@@ -1305,6 +1305,7 @@ async function start(getFiles, { cacheAfterStart = false, coop = null, loadSlot 
       $('saves-open').hidden = true;
     }
     const radioKeys = wireRadioKeys(Module, audio, coop, () => !!(map.last && map.last.inCar));
+    window.GTA2_inCar = () => !!(map.last && map.last.inCar);
     // The Controls screen: the game menu's Options (which launched GTA2 Manager) and the toolbar.
     const controls = new ControlsScreen({
       Module, keys: KEYS, defaults: PORT_CONTROLS, regPath: `${REG_ROOT}\\control`,

@@ -11,19 +11,20 @@
 // Keys: ui.* belongs to the web layer; the game side registers shell.* / game.* with
 // registerDict(). Each module registers its own strings (see the registerDict calls).
 
-export const LANGS = ['en', 'es', 'fr'];
+import { DE } from './de.js';
+export const LANGS = ['de', 'en', 'es', 'fr'];
 const STORAGE_KEY = 'gta2-port-lang';
 
-const dicts = { en: {}, es: {}, fr: {} };
+const dicts = { de: { ...DE }, en: {}, es: {}, fr: {} };
 const listeners = new Set();
 let current = readStored();
 
 function readStored() {
   try {
     const code = localStorage.getItem(STORAGE_KEY);
-    return LANGS.includes(code) ? code : 'en';
+    return LANGS.includes(code) ? code : 'de';
   } catch {
-    return 'en'; // storage unavailable (private window): default language
+    return 'de'; // storage unavailable (private window): default language
   }
 }
 
@@ -58,7 +59,7 @@ export function t(key, vars) {
 
 /** Merges { en: {key: str}, es: {...}, fr: {...} } into the dictionaries. */
 export function registerDict(dict) {
-  for (const code of LANGS) Object.assign(dicts[code], dict[code] || {});
+  for (const code of LANGS) Object.assign(dicts[code], code === 'de' ? Object.fromEntries(Object.entries(dict.en || {}).filter(([k]) => !(k in DE))) : (dict[code] || {}));
 }
 
 const ATTRS = { title: 'title', placeholder: 'placeholder', aria: 'aria-label', alt: 'alt' };

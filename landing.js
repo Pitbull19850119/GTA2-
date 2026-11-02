@@ -421,7 +421,7 @@ function wireControls() {
 
 const OPTIONS = [
   { key: 'gta2-port-lang', label: 'ui.opt.lang.label', hint: 'ui.opt.lang.hint',
-    choices: [['en', 'ui.opt.lang.en'], ['es', 'ui.opt.lang.es'], ['fr', 'ui.opt.lang.fr']], fallback: 'en',
+    choices: [['de', 'ui.opt.lang.de'], ['en', 'ui.opt.lang.en'], ['es', 'ui.opt.lang.es'], ['fr', 'ui.opt.lang.fr']], fallback: 'de',
     get: lang, apply: setLang },
   { key: 'gta2-port-camera', label: 'ui.opt.camera.label', hint: 'ui.opt.camera.hint',
     choices: [['modern', 'ui.opt.camera.modern'], ['classic', 'ui.opt.camera.classic']], fallback: 'modern' },
