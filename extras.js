@@ -71,7 +71,7 @@
   let best = ls.get('best', { frenzy: 0, survive: 0 });
 
   // Schalter (dauerhaft)
-  const T = ls.get('toggles', { autoTp: false, kids: false, godCash: false });
+  const T = ls.get('toggles', { autoTp: false, kids: false, godCash: false, noCops: false, god: false });
   const setT = (k, v) => { T[k] = v; ls.set('toggles', T); };
 
   // ---------- Daily ----------
@@ -86,6 +86,29 @@
   let dailyState = ls.get('daily', {});
   if (dailyState.day !== day) dailyState = { day, done: false, progress: 0, started: 0, base: 0 };
   const saveDaily = () => ls.set('daily', dailyState);
+
+  // ---------- Spielerfigur im Speicher finden (für Fahndung löschen / Unverwundbar) ----------
+  let pedBase = 0;
+  const pedEntry = () => { const m = M(); const q = m.ccall('gta2_dev_ped_entry', 'number', ['number'], [0]); return Array.from(new Int32Array(m.HEAPU8.buffer, q, 9)); };
+  const pedOk = (base, v) => { const H = M().HEAP32; return base > 0 && H[(base + 0x248) >> 2] === v[0] && H[(base + 0x258) >> 2] === v[2] && H[(base + 0x25C) >> 2] === v[3] && H[(base + 0x278) >> 2] === v[4] && H[(base + 0x27C) >> 2] === v[5] && M().HEAPU8[base + 0x225] === (v[6] & 255); };
+  const findPed = () => {
+    try {
+      const v = pedEntry(); if (v[2] === -1 && v[4] === -1) return 0;
+      if (pedOk(pedBase, v)) return pedBase;
+      const H = M().HEAP32, n = H.length - 16;
+      const hits = [];
+      for (let k = 0x248 >> 2; k < n; k++) {
+        if (H[k] !== v[2] || H[k + 1] !== v[3] || H[k + 8] !== v[4] || H[k + 9] !== v[5]) continue;
+        const base = k * 4 - 0x258;
+        if (pedOk(base, v)) { hits.push(base); if (hits.length > 3) break; }
+      }
+      pedBase = hits.length === 1 ? hits[0] : 0;
+      return pedBase;
+    } catch { return 0; }
+  };
+  const clearWanted = () => { const b = findPed(); if (!b) return false; new Int16Array(M().HEAPU8.buffer)[(b + 0x20A) >> 1] = 0; return true; };
+  const setInvuln = () => { const b = findPed(); if (!b) return false; new Uint16Array(M().HEAPU8.buffer)[(b + 0x208) >> 1] = 60000; return true; };
+  window.GTA2_clearWanted = clearWanted;
 
   // ---------- Funk ----------
   let voice = ls.get('voice', true);
@@ -228,6 +251,8 @@
       <div class="tg"><div>${daily.text}<small>${dailyState.done ? '✅ Heute geschafft' : 'Fortschritt: ' + Math.floor(dailyState.progress) + ' / ' + daily.goal}</small></div>
         ${dailyState.done ? '' : `<button class="b" data-a="dstart">${daily.secs ? 'Start' : 'Läuft'}</button>`}</div>
       <h3>Einstellungen</h3>
+      ${sw('noCops', '🚫 Keine Fahndung', 'Polizei sucht dich nie (in Jobs automatisch an)')}
+      ${sw('god', '🛡 Unverwundbar', 'Du nimmst keinen Schaden')}
       ${sw('kids', '👶 Kinder-Modus', 'Kein Schießen und Schlagen – nur fahren und erkunden')}
       ${sw('godCash', '💸 Speichern gratis', 'Manuelles Speichern kostet nichts (Geld wird zurückgebucht)')}
       ` : ''}
@@ -307,8 +332,10 @@
     if (stats.km >= 10) award('km10'); if (stats.km >= 100) award('km100');
     if (r.cash >= 100000) award('rich'); if (r.cash >= 1000000) award('million');
     if (r.stars >= 4) award('stars4');
-    if (wasWanted && r.stars === 0 && r.player) award('cops');
+    if (wasWanted && r.stars === 0 && r.player && !T.noCops && !(mode && mode.kind === 'job')) award('cops');
     wasWanted = r.stars > 0;
+    if (r.stars > 0 && (T.noCops || (mode && mode.kind === 'job'))) clearWanted();
+    if (T.god && tick % 4 === 0) setInvuln();
 
     // Speichern gratis: save() einmalig umhüllen und die Kosten zurückbuchen
     const S = window.gta2.states;
