@@ -64,6 +64,7 @@ uniform sampler2D uTexture;
 uniform int uBlend;
 layout(location = 0) out vec4 outColour;
 layout(location = 1) out vec4 outDepth;  // GTA2 Pocket: Tiefe (rhw) für Schatten/AO
+uniform float uMat;                       // GTA2 Pocket: Material-Shader (0 = aus)
 uniform int uSmooth;                      // GTA2 Pocket: HD-Glättung (weich statt Pixeltreppen)
 vec4 smoothTex(vec2 uv) {
   ivec2 sz = textureSize(uTexture, 0);
@@ -86,6 +87,31 @@ void main() {
   if (t.a < 0.5) discard;                 // palette colour 0 is transparent
   if (uSmooth == 1) t.a = 1.0;
   vec3 rgb = t.rgb * vColour.rgb;         // texture * diffuse
+  // GTA2 Pocket: Material-Shader – Relief aus der Textur (Fugen, Steine, Dachziegel), Glanz, lebendiges Gras
+  if (uMat > 0.0 && uBlend == 0 && gl_FragCoord.w > 0.005) {
+    ivec2 sz = textureSize(uTexture, 0);
+    ivec2 ip = ivec2(vUv * vec2(sz));
+    ivec2 mx = sz - 1;
+    vec3 W = vec3(0.299, 0.587, 0.114);
+    float hl = dot(texelFetch(uTexture, clamp(ip - ivec2(1, 0), ivec2(0), mx), 0).rgb, W);
+    float hr = dot(texelFetch(uTexture, clamp(ip + ivec2(1, 0), ivec2(0), mx), 0).rgb, W);
+    float hu = dot(texelFetch(uTexture, clamp(ip - ivec2(0, 1), ivec2(0), mx), 0).rgb, W);
+    float hd = dot(texelFetch(uTexture, clamp(ip + ivec2(0, 1), ivec2(0), mx), 0).rgb, W);
+    vec3 nrm = normalize(vec3((hl - hr) * 2.0, (hu - hd) * 2.0, 1.0));
+    vec3 L = normalize(vec3(-0.55, -0.55, 0.65));
+    float diff = clamp(dot(nrm, L) / L.z, 0.55, 1.45);
+    rgb *= mix(1.0, diff, 0.32 + 0.12 * uMat);
+    vec2 cell = floor(vUv * vec2(sz) * 3.0);
+    float nz = fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
+    float sat = max(rgb.r, max(rgb.g, rgb.b)) - min(rgb.r, min(rgb.g, rgb.b));
+    float spec = pow(max(dot(reflect(-L, nrm), vec3(0.0, 0.0, 1.0)), 0.0), 18.0);
+    rgb += spec * (1.0 - smoothstep(0.05, 0.25, sat)) * (0.08 + 0.06 * uMat);  // leichter Glanz auf Asphalt/Beton
+    rgb *= 1.0 + (nz - 0.5) * 0.07 * uMat;                                       // feine Körnung
+    if (rgb.g > rgb.r * 1.08 && rgb.g > rgb.b * 1.08) {                          // Gras: Halme/Variation
+      float blade = fract(sin(dot(floor(vUv * vec2(sz) * 6.0), vec2(39.3, 11.7))) * 9137.1);
+      rgb *= vec3(0.94, 1.04, 0.9) * (0.9 + blade * 0.2);
+    }
+  }
   float a = uBlend == 1 ? t.a * vColour.a : 1.0;
   outColour = vec4(rgb, a);
   float dv = clamp(gl_FragCoord.w * 2.0, 0.0, 0.99998) * 255.0;
@@ -181,6 +207,7 @@ export class Gta2Renderer {
     this.uView = gl.getUniformLocation(program, 'uView');
     this.uBlend = gl.getUniformLocation(program, 'uBlend');
     this.uSmooth = gl.getUniformLocation(program, 'uSmooth');
+    this.uMat = gl.getUniformLocation(program, 'uMat');
     try { this.smooth = localStorage.getItem('gta2-smooth') === '1'; } catch { this.smooth = false; }
     window.GTA2_setSmooth = (on) => { this.smooth = !!on; try { localStorage.setItem('gta2-smooth', on ? '1' : '0'); } catch {} };
     window.GTA2_smooth = () => this.smooth;
@@ -348,6 +375,7 @@ export class Gta2Renderer {
     gl.bufferData(gl.ARRAY_BUFFER, heap.subarray(vertPtr, vertPtr + vertCount * VERTEX_BYTES), gl.STREAM_DRAW);
     gl.uniform4f(this.uView, 2 / refW, -2 / REF_H, -1, 1);
     gl.uniform1i(this.uSmooth, this.smooth ? 1 : 0);
+    gl.uniform1f(this.uMat, this.post || 0);
     gl.activeTexture(gl.TEXTURE0);
     this.blend = -1;
 

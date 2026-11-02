@@ -126,63 +126,107 @@
     amb: { car: 34, name: 'Rettungsdienst' },
     cop: { car: 12, name: 'Polizei' },
     swat: { car: 52, name: 'SWAT' },
+    fire: { car: 17, name: 'Feuerwehr' },
+    taxi: { car: 10, name: 'Taxi' },
+  };
+  // echte Ziele aus dem Spiel: Autos (Flüchtige, Brände) und Passanten (Patienten, Fahrgäste)
+  const world = () => (window.GTA2_world ? window.GTA2_world() : null);
+  const pickTarget = (kind, s, min = 6, max = 45) => {
+    const w = world(); if (!w) return null;
+    const list = (kind === 'car' ? w.cars : w.peds).filter((e) => { const dd = Math.hypot(e.x - s.x, e.y - s.y); return dd > min && dd < max; });
+    if (kind === 'car') list.sort((p, q) => q.speed - p.speed); // bevorzugt fahrende Autos
+    return list.length ? (kind === 'car' ? list[0] : pick(list)) : null;
+  };
+  const follow = (tg) => { // Ziel weiterverfolgen (gleiche Spielfigur/gleiches Auto)
+    const w = world(); if (!w || !tg) return null;
+    const e = [...w.cars, ...w.peds].find((x) => x.id === tg.id);
+    return e || null;
+  };
+  const say = (job, kind) => {
+    const where = pick(STREETS);
+    const T2 = {
+      cop: { call: `Zentrale an Streife eins: Flüchtiges Fahrzeug ${where}! Verfolgen und stellen!`, ok: 'Fahrzeug gestellt. Festnahme bestätigt!', lost: 'Verdächtiger entkommen. Neuer Einsatz folgt.' },
+      swat: { call: `Zentrale an SWAT: Bewaffnete Täter flüchten ${where}! Stoppen Sie das Fahrzeug!`, ok: 'Täter gestoppt. Gute Arbeit, Team!', lost: 'Täter entkommen.' },
+      amb: { call: `Zentrale an Rettung eins: Verletzte Person ${where}. Bitte versorgen!`, ok: 'Patient stabil. Weiter zum nächsten Einsatz.', lost: 'Patient nicht mehr auffindbar.' },
+      fire: { call: `Zentrale an Löschzug: Fahrzeugbrand ${where}! Sofort löschen!`, ok: 'Feuer gelöscht. Danke!', lost: 'Brandobjekt verloren.' },
+      taxi: { call: `Taxizentrale: Fahrgast wartet ${where}.`, ok: 'Fahrgast zufrieden. Danke!', lost: 'Fahrgast ist weg.' },
+    };
+    radio(T2[job][kind]);
+  };
+  const newCall = (s) => {
+    const job = mode.job;
+    const kind = job === 'cop' || job === 'swat' || job === 'fire' ? 'car' : 'ped';
+    const tg = pickTarget(kind, s);
+    mode.phase = 'go'; mode.hold = 0; mode.tg = tg; mode.until = Date.now() + (job === 'cop' || job === 'swat' ? 90000 : 120000);
+    mode.t = tg ? { x: tg.x, y: tg.y } : randTarget(s, 15, 40);
+    mode.fake = !tg;
+    say(job, 'call');
   };
   const startJob = (job) => {
     const s = st(), d = dev(); if (!s) return;
     if (d && !d.inCar) call('gta2_dev_spawn_car', [JOBS[job].car, 2, 0, 0]);
     if (job === 'swat') [1, 6, 5].forEach((k) => call('gta2_dev_give_weapon', [k, 99]));
-    mode = { kind: 'job', job, phase: 'go', t: randTarget(s, 25, 60), n: 0 };
-    const where = pick(STREETS);
-    radio(job === 'amb' ? `Zentrale an Rettung eins: Verletzte Person ${where}. Bitte sofort hinfahren.`
-      : job === 'cop' ? `Zentrale an Streife eins: Verdächtiger ${where} gemeldet. Bitte überprüfen.`
-      : `Zentrale an SWAT: Bewaffnete Gang ${where}. Gebiet sichern!`);
-  };
-  const nextCall = (s) => {
-    const job = mode.job; mode.phase = 'go'; mode.t = randTarget(s, 25, 60); mode.hold = 0;
-    const where = pick(STREETS);
-    setTimeout(() => radio(job === 'amb' ? `Nächster Einsatz: Notfall ${where}.` : job === 'cop' ? `Neuer Einsatz: Einbruch ${where}.` : `Neuer Einsatz: Geiselnahme ${where}.`), 3500);
+    if (job === 'cop') call('gta2_dev_give_weapon', [0, 99]);
+    mode = { kind: 'job', job, n: 0 };
+    newCall(s);
   };
   const jobTick = (s, d, r) => {
+    const job = mode.job;
+    // Ziel live nachführen
+    if (mode.tg) { const e = follow(mode.tg); if (e) { mode.tg = e; mode.t = { x: e.x, y: e.y }; } else if (!mode.fake) { say(job, 'lost'); newCall(s); return; } }
+    if (!mode.tg && mode.fake && Math.random() < 0.05) { const kind = job === 'cop' || job === 'swat' || job === 'fire' ? 'car' : 'ped'; const tg = pickTarget(kind, s, 4, 50); if (tg) { mode.tg = tg; mode.fake = false; } }
     const { d: dist, a } = arrowTo(s, mode.t);
-    const right = d && d.inCar && d.carModel === JOBS[mode.job].car;
+    const right = d && d.inCar && d.carModel === JOBS[job].car;
+    const left = Math.max(0, Math.ceil((mode.until - Date.now()) / 1000));
+    const still = !d || Math.abs(d.speed) < 0.03;
     const pay = (n) => { call('gta2_dev_add_cash', [n]); stats.jobPay = (stats.jobPay || 0) + n; stats.jobs = (stats.jobs || 0) + 1; saveStats(); mode.n++; };
-    if (mode.job === 'amb') {
+    const done = (n, msg) => { pay(n); say(job, 'ok'); shout(`${msg} +${money(n)}`); setTimeout(() => { if (mode && mode.kind === 'job') newCall(st() || s); }, 3000); mode.phase = 'wait'; };
+    if (mode.phase === 'wait') { hud.textContent = '📻 Warte auf nächsten Einsatz…'; hud.classList.add('show'); return; }
+    if (!left) { say(job, 'lost'); newCall(s); return; }
+    if (dist > 110) { say(job, 'lost'); newCall(s); return; }
+    if (job === 'cop' || job === 'swat') {
+      // verfolgen: dicht dranbleiben (unter 2,5 Blöcken) bis die Leiste voll ist
+      mode.hold = dist < 2.5 ? mode.hold + 0.25 : Math.max(0, mode.hold - 0.1);
+      const need = job === 'swat' ? 4 : 3;
+      const bar = '▰'.repeat(Math.min(10, Math.round(mode.hold / need * 10))).padEnd(10, '▱');
+      hud.textContent = `${job === 'swat' ? '🛡' : '🚨'} Flüchtiger ${a} ${Math.round(dist)} Bl. · ${left}s · ${bar}${right ? '' : ' · Dienstwagen nehmen'}`;
+      if (mode.hold >= need) {
+        if (job === 'swat') for (let g = 0; g < GANGS; g++) call('gta2_dev_set_respect', [g, -100]);
+        done(job === 'swat' ? 9000 + left * 60 : 4000 + left * 50, job === 'swat' ? '🛡 Täter gestoppt!' : '🚔 Gestellt!');
+      }
+    } else if (job === 'fire') {
+      // löschen: nah ran und Wasserwerfer (Schuss) benutzen
+      const spraying = !!(window.__xFire);
+      mode.hold = dist < 4 && (spraying || !right) ? mode.hold + (spraying ? 0.25 : 0.12) : Math.max(0, mode.hold - 0.05);
+      const bar = '▰'.repeat(Math.min(10, Math.round(mode.hold / 4 * 10))).padEnd(10, '▱');
+      hud.textContent = `🔥 Brand ${a} ${Math.round(dist)} Bl. · ${left}s · ${bar}${right ? (dist < 4 ? ' · Schuss = Wasser!' : '') : ' · Löschfahrzeug nehmen'}`;
+      if (mode.hold >= 4) done(5000 + left * 40, '🚒 Gelöscht!');
+    } else if (job === 'amb') {
       if (mode.phase === 'go') {
-        hud.textContent = `🚑 Patient ${a} ${Math.round(dist)} Bl.${right ? '' : ' · Krankenwagen nehmen'}`;
-        if (dist < 3 && right) { mode.phase = 'hosp'; mode.t = randTarget(s, 35, 75); mode.until = Date.now() + (35 + arrowTo(s, mode.t).d) * 1000; radio('Patient an Bord. Fahren Sie ins Krankenhaus, schnell!'); }
+        mode.hold = dist < 2.2 && still ? mode.hold + 0.25 : 0;
+        hud.textContent = mode.hold > 0 ? `🩹 Versorgen… ${'▰'.repeat(Math.round(mode.hold / 2.5 * 10)).padEnd(10, '▱')}` : `🚑 Patient ${a} ${Math.round(dist)} Bl. · ${left}s · daneben anhalten`;
+        if (mode.hold >= 2.5) {
+          if (Math.random() < 0.5) { done(3500 + left * 30, '🩹 Versorgt!'); }
+          else { mode.phase = 'hosp'; mode.tg = null; mode.fake = true; mode.t = randTarget(s, 35, 70); mode.until = Date.now() + (35 + arrowTo(s, mode.t).d) * 1000; radio('Schwer verletzt! Bringen Sie den Patienten ins Krankenhaus!'); }
+        }
       } else {
-        const left = Math.max(0, Math.ceil((mode.until - Date.now()) / 1000));
         hud.textContent = `🏥 Krankenhaus ${a} ${Math.round(dist)} Bl. · ${left}s`;
-        if (!left) { radio('Patient leider verstorben. Zurück zur Wache.'); nextCall(s); }
-        else if (dist < 3) { const p = 3000 + left * 60; pay(p); shout(`🏥 Gerettet! +${money(p)}`); nextCall(s); }
+        if (dist < 3) done(6000 + left * 60, '🏥 Gerettet!');
       }
-    } else if (mode.job === 'cop') {
+    } else if (job === 'taxi') {
       if (mode.phase === 'go') {
-        hud.textContent = `🚓 Einsatz ${a} ${Math.round(dist)} Bl.${right ? '' : ' · Streifenwagen nehmen'}`;
-        if (dist < 4) { mode.phase = 'chase'; mode.until = Date.now() + 60000; radio('Verdächtiger flüchtet! Verfolgen und stellen!'); }
+        mode.hold = dist < 2.2 && still && d && d.inCar ? mode.hold + 0.25 : 0;
+        hud.textContent = `🚕 Fahrgast ${a} ${Math.round(dist)} Bl.${d && d.inCar ? ' · daneben anhalten' : ' · Auto nehmen'}`;
+        if (mode.hold >= 1.5) { mode.phase = 'drive'; mode.tg = null; mode.fake = true; mode.t = randTarget(s, 30, 70); mode.until = Date.now() + (30 + arrowTo(s, mode.t).d * 0.9) * 1000; radio('Fahrgast eingestiegen. Bitte zum Ziel!'); }
       } else {
-        // Verdächtiger flieht langsam weiter
-        const ang = (mode.ang = (mode.ang ?? Math.random() * 6.28) + (Math.random() - 0.5) * 0.3);
-        mode.t = { x: Math.min(245, Math.max(10, mode.t.x + Math.cos(ang) * 0.12)), y: Math.min(245, Math.max(10, mode.t.y + Math.sin(ang) * 0.12)) };
-        const left = Math.max(0, Math.ceil((mode.until - Date.now()) / 1000));
-        const still = !d || Math.abs(d.speed) < 0.02;
-        mode.hold = dist < 3 && still ? (mode.hold || 0) + 0.25 : 0;
-        hud.textContent = `🚨 Verdächtiger ${a} ${Math.round(dist)} Bl. · ${left}s${dist < 3 ? ' · anhalten zum Festnehmen' : ''}`;
-        if (mode.hold >= 1.5) { const p = 4000 + left * 80; pay(p); radio('Festnahme bestätigt. Gute Arbeit!'); shout(`🚔 Festgenommen! +${money(p)}`); nextCall(s); }
-        else if (!left) { radio('Verdächtiger entkommen.'); nextCall(s); }
-      }
-    } else if (mode.job === 'swat') {
-      if (mode.phase === 'go') {
-        hud.textContent = `🛡 Einsatzort ${a} ${Math.round(dist)} Bl.`;
-        if (dist < 5) { mode.phase = 'hold'; mode.hold = 0; for (let g = 0; g < GANGS; g++) call('gta2_dev_set_respect', [g, -100]); radio('Kontakt! Halten Sie das Gebiet zwanzig Sekunden!'); }
-      } else {
-        if (dist < 8) mode.hold += 0.25;
-        hud.textContent = dist < 8 ? `🛡 Gebiet halten: ${Math.max(0, 20 - Math.floor(mode.hold))}s` : `🛡 Zurück ins Gebiet! ${a} ${Math.round(dist)} Bl.`;
-        if (mode.hold >= 20) { for (let g = 0; g < GANGS; g++) call('gta2_dev_set_respect', [g, 0]); const p = 12000; pay(p); radio('Gebiet gesichert. Hervorragend, Team!'); shout(`🛡 Gesichert! +${money(p)}`); nextCall(s); }
+        hud.textContent = `🚕 Ziel ${a} ${Math.round(dist)} Bl. · ${left}s`;
+        if (dist < 3 && still) { stats.taxi++; saveStats(); if (stats.taxi >= 5) award('taxi5'); if (!dailyState.done && daily.id === 'taxi') dailyState.progress++; done(2000 + left * 40, '🚕 Angekommen!'); }
       }
     }
     hud.classList.add('show');
   };
+  window.addEventListener('keydown', (e) => { if (e.code === 'KeyL') window.__xFire = true; }, true);
+  window.addEventListener('keyup', (e) => { if (e.code === 'KeyL') window.__xFire = false; }, true);
 
   // ---------- Modi ----------
   let mode = null; // {kind, ...}
@@ -236,7 +280,6 @@
       <div class="row">
         <button class="b ${mode && mode.kind === 'frenzy' ? 'on' : ''}" data-m="frenzy">🔥 Amoklauf (2 Min)</button>
         <button class="b ${mode && mode.kind === 'survive' ? 'on' : ''}" data-m="survive">🛡 Überleben</button>
-        <button class="b ${mode && mode.kind === 'taxi' ? 'on' : ''}" data-m="taxi">🚕 Taxi</button>
         <button class="b ${mode && mode.kind === 'stunt' ? 'on' : ''}" data-m="stunt">🤸 Stunt-Jagd</button>
         ${mode ? '<button class="b" data-m="stop">⏹ Modus beenden</button>' : ''}
       </div>
@@ -246,9 +289,11 @@
         <button class="b ${mode && mode.kind === 'job' && mode.job === 'amb' ? 'on' : ''}" data-j="amb">🚑 Rettungsdienst</button>
         <button class="b ${mode && mode.kind === 'job' && mode.job === 'cop' ? 'on' : ''}" data-j="cop">🚓 Polizei</button>
         <button class="b ${mode && mode.kind === 'job' && mode.job === 'swat' ? 'on' : ''}" data-j="swat">🛡 SWAT</button>
+        <button class="b ${mode && mode.kind === 'job' && mode.job === 'fire' ? 'on' : ''}" data-j="fire">🚒 Feuerwehr</button>
+        <button class="b ${mode && mode.kind === 'job' && mode.job === 'taxi' ? 'on' : ''}" data-j="taxi">🚕 Taxi</button>
         <button class="b ${voice ? 'on' : ''}" data-a="voice">📻 Funk-Stimme ${voice ? 'an' : 'aus'}</button>
       </div>
-      <div class="note">Einsatzfahrzeug wird geliefert. 📯 = Sirene. Verdienst bisher: ${money(stats.jobPay || 0)} · Einsätze: ${stats.jobs || 0}</div>
+      <div class="note">Einsatzfahrzeug wird geliefert. 📯 = Sirene. Ziele sind echte Autos und Passanten im Spiel. Verdienst bisher: ${money(stats.jobPay || 0)} · Einsätze: ${stats.jobs || 0}</div>
       <h3>Tageschallenge</h3>
       <div class="tg"><div>${daily.text}<small>${dailyState.done ? '✅ Heute geschafft' : 'Fortschritt: ' + Math.floor(dailyState.progress) + ' / ' + daily.goal}</small></div>
         ${dailyState.done ? '' : `<button class="b" data-a="dstart">${daily.secs ? 'Start' : 'Läuft'}</button>`}</div>
@@ -265,13 +310,13 @@
         <p><b>Oben rechts:</b> 🗺 Karte (antippen = Wegpunkt) und ☰ mit Menü, Radio, Speichern, Neigen-Lenkung, Knöpfe anpassen, Steuerung ausblenden.</p>
         <p><b>Speichern:</b> automatisch alle 3 Minuten, beim Verlassen und nach Aufträgen. Manuell über ☰ → 💾 (kostet Geld, außer „Speichern gratis“ ist an).</p>
         <p><b>Polizei:</b> kommt, wenn sie Verbrechen sieht – Köpfe oben zeigen die Fahndung.</p>
-        <p><b>Jobs:</b> Rettungsdienst = Patient abholen und ins Krankenhaus bringen. Polizei = zum Einsatzort, Verdächtigen stellen (neben ihm anhalten), Festnahme. SWAT = zum Einsatzort und das Gebiet 20 s halten, die Gangs greifen an. Die Zentrale meldet sich per Funk.</p>
+        <p><b>Jobs:</b> Rettungsdienst = Patient abholen und ins Krankenhaus bringen. Polizei = flüchtiges Auto verfolgen und dicht dranbleiben, bis es gestellt ist. Rettungsdienst = Verletzte versorgen (daneben anhalten), Schwerverletzte ins Krankenhaus. SWAT = flüchtige Täter-Fahrzeuge verfolgen und stoppen (dicht dranbleiben). Feuerwehr = zum brennenden Auto, Schuss = Wasser. Taxi = echten Fahrgast abholen und hinbringen. Die Zentrale meldet sich per Funk.</p>
         <p><b>Spielmodi:</b> Amoklauf (2 Min Punkte sammeln), Überleben (Uhr läuft, solange du gesucht wirst), Taxi, Stunt-Jagd. Rekorde und Erfolge werden gespeichert.</p>
         <p><b>Koop:</b> Startseite → Koop → „Raum öffnen“. Unter „Mitspieler suchen“ siehst du offene Räume anderer. Im Spiel: 💬 Chat, 🏆 Tabelle, 🎮 Modi (Wettrennen, Fangen – nur Host).</p>
       </details>
       <h3>🎨 Grafik</h3>
       <div class="row">${[['0', 'Original'], ['1', 'Modern'], ['2', 'Ultra']].map(([v, n]) => `<button class="b ${String(window.GTA2_graphics ? window.GTA2_graphics() : 1) === v ? 'on' : ''}" data-gfx="${v}">${n}</button>`).join('')}</div>
-      <div class="note">Modern/Ultra: echte Schatten von Gebäuden, weiche Kontaktschatten (Ambient Occlusion), Schärfe und Leuchten heller Lichter – Farben bleiben original. Ultra = stärker, braucht mehr Leistung.${window.GTA2_gfxInfo ? ' · Status: ' + (window.GTA2_gfxInfo().shadows ? '✅ Schatten aktiv' : window.GTA2_gfxInfo().post ? '⚠️ nur Schärfe (Schatten nicht unterstützt)' : '❌ nicht unterstützt') : ''}</div>
+      <div class="note">Modern/Ultra: Material-Shader (plastische Straßen, Pflaster, Beton, Dächer, Gras), Gebäudeschatten, Kontaktschatten, Schärfe und Leuchten heller Lichter – Farben bleiben original. Ultra = stärker, braucht mehr Leistung.${window.GTA2_gfxInfo ? ' · Status: ' + (window.GTA2_gfxInfo().shadows ? '✅ Schatten aktiv' : window.GTA2_gfxInfo().post ? '⚠️ nur Schärfe (Schatten nicht unterstützt)' : '❌ nicht unterstützt') : ''}</div>
       <div class="tg"><div>✨ HD-Glättung<small>Figuren, Autos und Texturen weich statt in Pixel-Treppen</small></div><div class="sw ${window.GTA2_smooth && window.GTA2_smooth() ? 'on' : ''}" data-a="smooth"></div></div>
       <h3>📲 Spielstände übertragen (PC ↔ Handy)</h3>
       <div class="row"><button class="b" data-a="export">⬇️ Exportieren (Datei)</button><button class="b" data-a="import">⬆️ Importieren</button></div>
