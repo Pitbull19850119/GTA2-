@@ -70,7 +70,9 @@ void main() {
   vec3 rgb = t.rgb * vColour.rgb;         // texture * diffuse
   float a = uBlend == 1 ? t.a * vColour.a : 1.0;
   outColour = vec4(rgb, a);
-  outDepth = uBlend == 0 ? vec4(gl_FragCoord.w, 0.0, 0.0, 1.0) : vec4(0.0);
+  float dv = clamp(gl_FragCoord.w * 2.0, 0.0, 0.99998) * 255.0;
+  // HUD (rhw ~ 0) löscht die Tiefe darunter, damit Anzeigen nie abgedunkelt werden
+  outDepth = gl_FragCoord.w < 0.005 ? vec4(0.0, 0.0, 0.0, 1.0) : (uBlend == 0 ? vec4(floor(dv) / 255.0, fract(dv), 0.0, 1.0) : vec4(0.0));
 }`;
 
 const POST_VS = `#version 300 es
@@ -92,7 +94,7 @@ uniform float uScale;  // Canvas-Pixel pro Referenzpixel
 uniform float uLevel;  // 1 = Modern, 2 = Ultra
 uniform int uHasDepth;
 out vec4 outColour;
-float dist(vec2 uv) { float r = texture(uDepth, uv).r; return r > 0.01 ? 1.0 / r : -1.0; }
+float dist(vec2 uv) { vec2 e = texture(uDepth, uv).rg; float r = (e.r * 255.0 + e.g) / 255.0 * 0.5; return r > 0.005 ? 1.0 / r : -1.0; }
 void main() {
   vec3 c = texture(uScene, vUv).rgb;
   if (uHasDepth == 1) {
@@ -116,7 +118,7 @@ void main() {
         if (o2 > 0.0) occ += smoothstep(0.05, 0.8, d - o2);
       }
       occ /= 16.0;
-      float shade = (1.0 - sh * (0.38 + 0.1 * uLevel)) * (1.0 - occ * (0.5 + 0.15 * uLevel));
+      float shade = (1.0 - sh * (0.42 + 0.12 * uLevel)) * (1.0 - occ * (0.55 + 0.2 * uLevel));
       c *= shade;
     }
   }
@@ -196,7 +198,7 @@ export class Gta2Renderer {
       gl.uniform1i(gl.getUniformLocation(pp, 'uScene'), 0);
       gl.uniform1i(gl.getUniformLocation(pp, 'uDepth'), 1);
       gl.useProgram(program);
-      this.depthOk = !!gl.getExtension('EXT_color_buffer_float');
+      this.depthOk = true; // RGBA8-kodierte Tiefe: läuft auf allen Geräten
       this.depthTex = gl.createTexture();
       this.postVao = gl.createVertexArray();
       this.fbo = gl.createFramebuffer();
@@ -205,6 +207,7 @@ export class Gta2Renderer {
     } catch { this.postProgram = null; }
     window.GTA2_setGraphics = (lvl) => { this.post = lvl; try { localStorage.setItem('gta2-gfx', String(lvl)); } catch {} };
     window.GTA2_graphics = () => this.post;
+    window.GTA2_gfxInfo = () => ({ post: !!this.postProgram, shadows: !!(this.postProgram && this.depthOk) });
     this.resize();
   }
 
@@ -296,7 +299,7 @@ export class Gta2Renderer {
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.fboTex, 0);
         if (this.depthOk) {
           gl.bindTexture(gl.TEXTURE_2D, this.depthTex);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, W, H, 0, gl.RED, gl.HALF_FLOAT, null);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);

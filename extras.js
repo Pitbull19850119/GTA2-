@@ -271,7 +271,7 @@
       </details>
       <h3>🎨 Grafik</h3>
       <div class="row">${[['0', 'Original'], ['1', 'Modern'], ['2', 'Ultra']].map(([v, n]) => `<button class="b ${String(window.GTA2_graphics ? window.GTA2_graphics() : 1) === v ? 'on' : ''}" data-gfx="${v}">${n}</button>`).join('')}</div>
-      <div class="note">Modern/Ultra: echte Schatten von Gebäuden, weiche Kontaktschatten (Ambient Occlusion), Schärfe und Leuchten heller Lichter – Farben bleiben original. Ultra = stärker, braucht mehr Leistung.</div>
+      <div class="note">Modern/Ultra: echte Schatten von Gebäuden, weiche Kontaktschatten (Ambient Occlusion), Schärfe und Leuchten heller Lichter – Farben bleiben original. Ultra = stärker, braucht mehr Leistung.${window.GTA2_gfxInfo ? ' · Status: ' + (window.GTA2_gfxInfo().shadows ? '✅ Schatten aktiv' : window.GTA2_gfxInfo().post ? '⚠️ nur Schärfe (Schatten nicht unterstützt)' : '❌ nicht unterstützt') : ''}</div>
       <h3>📲 Spielstände übertragen (PC ↔ Handy)</h3>
       <div class="row"><button class="b" data-a="export">⬇️ Exportieren (Datei)</button><button class="b" data-a="import">⬆️ Importieren</button></div>
       <div class="note">Am einen Gerät exportieren, die Datei per AirDrop, iCloud, Mail oder USB aufs andere Gerät bringen und dort importieren. Danach auf der Startseite „Weiterspielen“.</div>
