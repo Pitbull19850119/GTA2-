@@ -1302,6 +1302,18 @@ async function start(getFiles, { cacheAfterStart = false, coop = null, loadSlot 
       document.addEventListener('visibilitychange', () => { if (document.hidden) autoSave(); });
       window.addEventListener('pagehide', autoSave);
     }
+    // GTA2 Pocket: Startkapital $20.000 bei jedem neuen Spiel / neuen Bezirk (nicht nach dem Laden eines Spielstands)
+    if (states) {
+      let seenEpoch = null;
+      setInterval(() => {
+        try {
+          const st = map.last;
+          if (!st || !st.hasPlayer || st.epoch === seenEpoch) return;
+          seenEpoch = st.epoch;
+          if (states.rules().cash === 0) Module.ccall('gta2_dev_add_cash', 'number', ['number'], [20000]);
+        } catch { /* ignore */ }
+      }, 1000);
+    }
     if (states) {
       const savesTitle = () => { $('saves-open').title = t('shell.savesTitle', { key: SAVE_KEY }); };
       savesTitle();
