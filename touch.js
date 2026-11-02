@@ -268,9 +268,12 @@
     const r = dpad.getBoundingClientRect();
     const x = (e.clientX - (r.left + r.width / 2)) / (r.width / 2), y = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
     const on = { u: y < -0.33, d: y > 0.33, l: x < -0.33, r: x > 0.33 };
-    for (const k in dpKeys) { setDir(dpKeys[k], on[k], 'dpad'); dpad.querySelector('.' + k).classList.toggle('on', on[k]); }
+    for (const k in dpKeys) dpad.querySelector('.' + k).classList.toggle('on', on[k]);
+    const vx = (on.r ? 1 : 0) - (on.l ? 1 : 0), vy = (on.d ? 1 : 0) - (on.u ? 1 : 0);
+    vec = vx || vy ? { x: vx / Math.hypot(vx, vy), y: vy / Math.hypot(vx, vy) } : null;
+    steer();
   };
-  const dpEnd = () => { did = null; for (const k in dpKeys) { setDir(dpKeys[k], false, 'dpad'); dpad.querySelector('.' + k).classList.remove('on'); } };
+  const dpEnd = () => { did = null; vec = null; for (const k in dpKeys) dpad.querySelector('.' + k).classList.remove('on'); steer(); };
   dpad.addEventListener('pointerdown', (e) => { if (editing) return; e.preventDefault(); did = e.pointerId; dpad.setPointerCapture(did); buzz(); dpMove(e); });
   dpad.addEventListener('pointermove', (e) => { if (e.pointerId === did && !editing) dpMove(e); });
   dpad.addEventListener('pointerup', dpEnd);
