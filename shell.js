@@ -1572,12 +1572,24 @@ async function wireServerHome() {
   showLanding({
     files,
     onCoop: () => { location.search = '?coop'; },
-    onPlay: () => playNow(),
+    onPlay: () => playNow(window.GTA2_newest && !window.GTA2_forceNew ? window.GTA2_newest : null),
   });
   // Continue: the newest save this version of the game can load
   listSaves().then((all) => {
     const newest = all.find((s) => s.current);
-    if (newest) showContinue({ ...newest, thumb: newest.thumb }, () => playNow(newest.slot));
+    if (newest) {
+      window.GTA2_newest = newest.slot;
+      showContinue({ ...newest, thumb: newest.thumb }, () => playNow(newest.slot));
+      // „Spielen“ setzt den letzten Stand fort; daneben ein Knopf für ein neues Spiel
+      const root = document.getElementById('continue-root');
+      if (root && !document.getElementById('new-game')) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.id = 'new-game'; b.className = 'btn ghost'; b.textContent = 'Neues Spiel';
+        b.style.marginTop = '.6rem';
+        b.addEventListener('click', () => { if (confirm('Neues Spiel starten? Der letzte Stand bleibt unter „Spielstände“ erhalten, wird aber durch das automatische Speichern überschrieben.')) { window.GTA2_forceNew = true; playNow(null); } });
+        root.after(b);
+      }
+    }
   });
 }
 
