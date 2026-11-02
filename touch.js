@@ -33,7 +33,17 @@
       font:600 12px system-ui,sans-serif;display:none;--sc:1;color:#fff}
   body.tc-on #tc{display:block}
   #tc .z{pointer-events:auto;touch-action:none}
-  #tc .stick{position:absolute;width:calc(150px*var(--sc));height:calc(150px*var(--sc));border-radius:50%;
+  #tc .mv{position:absolute;width:calc(150px*var(--sc));height:calc(150px*var(--sc))}
+  #tc .mvt{position:absolute;left:50%;top:calc(-40px*var(--sc));transform:translateX(-50%);width:34px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.2);font-size:15px;color:rgba(255,255,255,.85)}
+  #tc .dpad{position:absolute;inset:0;display:none}
+  #tc.dpadmode .dpad{display:block}
+  #tc.dpadmode .stick{display:none}
+  #tc .dpad i{position:absolute;width:34%;height:34%;border-radius:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);
+      display:flex;align-items:center;justify-content:center;font-style:normal;font-size:calc(18px*var(--sc));color:rgba(255,255,255,.8)}
+  #tc .dpad i.on{background:rgba(255,122,0,.6)}
+  #tc .dpad .u{left:33%;top:0}#tc .dpad .d{left:33%;bottom:0}#tc .dpad .l{left:0;top:33%}#tc .dpad .r{right:0;top:33%}
+  #tc .stick{position:absolute;inset:0;border-radius:50%;
       background:radial-gradient(circle,rgba(255,255,255,.07),rgba(255,255,255,.02) 70%);border:1px solid rgba(255,255,255,.14)}
   #tc .knob{position:absolute;left:50%;top:50%;width:38%;height:38%;transform:translate(-50%,-50%);border-radius:50%;
       background:rgba(255,255,255,.22);box-shadow:0 0 0 1px rgba(255,255,255,.25);pointer-events:none;transition:background .15s}
@@ -67,11 +77,11 @@
   #tc .s.on{background:rgba(255,122,0,.75);color:#111}
   #tc .more{display:none;flex-direction:column;gap:6px;position:absolute;top:38px;right:0;padding:8px;border-radius:12px;background:rgba(0,0,0,.7)}
   #tc .more.open{display:flex}
-  #tc.hide .stick,#tc.hide .pad,#tc.hide .menu{display:none}
+  #tc.hide .mv,#tc.hide .pad,#tc.hide .menu{display:none}
   #tc .toast{position:absolute;left:50%;top:22%;transform:translateX(-50%);padding:10px 16px;border-radius:10px;
       background:rgba(0,0,0,.75);opacity:0;transition:opacity .25s;pointer-events:none}
   #tc .toast.show{opacity:1}
-  #tc.edit .stick,#tc.edit .pad{outline:2px dashed #2ef2ff;outline-offset:6px}
+  #tc.edit .mv,#tc.edit .pad{outline:2px dashed #2ef2ff;outline-offset:6px}
   #tc .editbar{position:absolute;left:50%;top:40%;transform:translateX(-50%);display:none;gap:10px;align-items:center;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.8)}
   #tc.edit .editbar{display:flex}
   #tc .editbar input{width:140px}`;
@@ -92,7 +102,8 @@
         <div class="s z" id="tc-toggle">⌨︎ ausblenden</div>
       </div>
     </div>
-    <div class="stick z"><div class="knob"></div></div>
+    <div class="mv z"><div class="mvt z" id="tc-mvt">✚</div><div class="stick z"><div class="knob"></div></div>
+      <div class="dpad z"><i class="u">▲</i><i class="d">▼</i><i class="l">◀</i><i class="r">▶</i></div></div>
     <div class="pad z">
       <div class="b z main" data-k="KeyL" id="tc-fire">Kampf</div>
       <div class="b z mid k-enter" data-k="Enter" data-foot="Ein-<br>steigen" data-car="Aus-<br>steigen">Ein-<br>steigen</div>
@@ -110,7 +121,7 @@
   document.body.appendChild(root);
 
   const $ = (s) => root.querySelector(s);
-  const stick = $('.stick'), knob = $('.knob'), pad = $('.pad'), toastEl = $('.toast');
+  const mv = $('.mv'), dpad = $('.dpad'), stick = $('.stick'), knob = $('.knob'), pad = $('.pad'), toastEl = $('.toast');
   let toastT;
   const toast = (msg) => { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('show'), 1800); };
 
@@ -157,7 +168,7 @@
       if (p) { el.style.left = p[0] * 100 + 'vw'; el.style.top = p[1] * 100 + 'vh'; }
       else { el.style[side] = `calc(22px + env(safe-area-inset-${side}))`; el.style.bottom = 'calc(22px + env(safe-area-inset-bottom))'; }
     };
-    pos(stick, layout.stick, 'left'); pos(pad, layout.pad, 'right');
+    pos(mv, layout.stick, 'left'); pos(pad, layout.pad, 'right');
   };
   place();
   $('#tc-size').value = layout.sc;
@@ -182,7 +193,7 @@
     }, true);
     el.addEventListener('pointerup', () => { start = null; }, true);
   };
-  dragMove(stick, 'stick'); dragMove(pad, 'pad');
+  dragMove(mv, 'stick'); dragMove(pad, 'pad');
   $('#tc-edit').addEventListener('pointerdown', (e) => { e.preventDefault(); setEdit(!editing); });
   $('#tc-done').addEventListener('pointerdown', (e) => { e.preventDefault(); setEdit(false); });
   $('#tc-reset').addEventListener('pointerdown', (e) => { e.preventDefault(); layout = { ...DEFAULT }; $('#tc-size').value = 1; place(); });
@@ -240,6 +251,30 @@
   stick.addEventListener('pointermove', (e) => { if (e.pointerId === sid && !editing) move(e); });
   stick.addEventListener('pointerup', end);
   stick.addEventListener('pointercancel', end);
+
+  // ---- Steuerkreuz (klassisch: oben vor, unten zurück, links/rechts drehen) ----
+  let dmode = store.get('dpad', false);
+  const mvt = $('#tc-mvt');
+  const applyMode = () => { root.classList.toggle('dpadmode', dmode); mvt.textContent = dmode ? '🕹' : '✚'; };
+  applyMode();
+  mvt.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); e.stopPropagation(); if (editing) return;
+    dmode = !dmode; store.set('dpad', dmode); applyMode(); end(); dpEnd();
+    toast(dmode ? 'Steuerkreuz' : 'Joystick');
+  });
+  let did = null;
+  const dpKeys = { u: 'up', d: 'down', l: 'left', r: 'right' };
+  const dpMove = (e) => {
+    const r = dpad.getBoundingClientRect();
+    const x = (e.clientX - (r.left + r.width / 2)) / (r.width / 2), y = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+    const on = { u: y < -0.33, d: y > 0.33, l: x < -0.33, r: x > 0.33 };
+    for (const k in dpKeys) { setDir(dpKeys[k], on[k], 'dpad'); dpad.querySelector('.' + k).classList.toggle('on', on[k]); }
+  };
+  const dpEnd = () => { did = null; for (const k in dpKeys) { setDir(dpKeys[k], false, 'dpad'); dpad.querySelector('.' + k).classList.remove('on'); } };
+  dpad.addEventListener('pointerdown', (e) => { if (editing) return; e.preventDefault(); did = e.pointerId; dpad.setPointerCapture(did); buzz(); dpMove(e); });
+  dpad.addEventListener('pointermove', (e) => { if (e.pointerId === did && !editing) dpMove(e); });
+  dpad.addEventListener('pointerup', dpEnd);
+  dpad.addEventListener('pointercancel', dpEnd);
 
   // ---- Lenken durch Neigen (nur im Auto, wenn Stick nicht benutzt wird) ----
   let tiltOn = false;
