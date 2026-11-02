@@ -155,12 +155,16 @@
   };
   const newCall = (s) => {
     const job = mode.job;
-    const kind = job === 'cop' || job === 'swat' || job === 'fire' ? 'car' : 'ped';
-    const tg = pickTarget(kind, s);
+    let kind = job === 'cop' || job === 'swat' || job === 'fire' ? 'car' : 'ped';
+    if ((job === 'cop' || job === 'swat') && Math.random() < 0.5) kind = 'ped'; // auch Flüchtige zu Fuß
+    let tg = pickTarget(kind, s);
+    if (!tg && (job === 'cop' || job === 'swat')) { kind = kind === 'car' ? 'ped' : 'car'; tg = pickTarget(kind, s); }
+    mode.onFoot = kind === 'ped';
     mode.phase = 'go'; mode.hold = 0; mode.tg = tg; mode.until = Date.now() + (job === 'cop' || job === 'swat' ? 90000 : 120000);
     mode.t = tg ? { x: tg.x, y: tg.y } : randTarget(s, 15, 40);
     mode.fake = !tg;
-    say(job, 'call');
+    if ((job === 'cop' || job === 'swat') && mode.onFoot) radio(`Zentrale: Verdächtiger flüchtet zu Fuß ${pick(STREETS)}! Hinterher und festnehmen!`);
+    else say(job, 'call');
   };
   const startJob = (job) => {
     const s = st(), d = dev(); if (!s) return;
@@ -186,13 +190,14 @@
     if (dist > 110) { say(job, 'lost'); newCall(s); return; }
     if (job === 'cop' || job === 'swat') {
       // verfolgen: dicht dranbleiben (unter 2,5 Blöcken) bis die Leiste voll ist
-      mode.hold = dist < 2.5 ? mode.hold + 0.25 : Math.max(0, mode.hold - 0.1);
+      const reach = mode.onFoot ? 1.6 : 2.5;
+      mode.hold = dist < reach ? mode.hold + 0.25 : Math.max(0, mode.hold - 0.1);
       const need = job === 'swat' ? 4 : 3;
       const bar = '▰'.repeat(Math.min(10, Math.round(mode.hold / need * 10))).padEnd(10, '▱');
-      hud.textContent = `${job === 'swat' ? '🛡' : '🚨'} Flüchtiger ${a} ${Math.round(dist)} Bl. · ${left}s · ${bar}${right ? '' : ' · Dienstwagen nehmen'}`;
+      hud.textContent = `${job === 'swat' ? '🛡' : '🚨'} ${mode.onFoot ? '🏃 Flüchtiger zu Fuß' : '🚗 Flüchtiges Auto'} ${a} ${Math.round(dist)} Bl. · ${left}s · ${bar}`;
       if (mode.hold >= need) {
         if (job === 'swat') for (let g = 0; g < GANGS; g++) call('gta2_dev_set_respect', [g, -100]);
-        done(job === 'swat' ? 9000 + left * 60 : 4000 + left * 50, job === 'swat' ? '🛡 Täter gestoppt!' : '🚔 Gestellt!');
+        done(job === 'swat' ? 9000 + left * 60 : 4000 + left * 50, mode.onFoot ? '🚔 Festgenommen!' : job === 'swat' ? '🛡 Täter gestoppt!' : '🚔 Gestellt!');
       }
     } else if (job === 'fire') {
       // löschen: nah ran und Wasserwerfer (Schuss) benutzen
