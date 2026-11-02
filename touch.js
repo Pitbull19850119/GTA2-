@@ -328,6 +328,6 @@
   update();
 
   document.addEventListener('gesturestart', (e) => e.preventDefault());
-  document.addEventListener('touchmove', (e) => { if (document.body.classList.contains('tc-on')) e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchmove', (e) => { if (document.body.classList.contains('tc-on') && !(e.target.closest && e.target.closest('#xpop, #cxq, #saves, .saves, #controls-dialog, dialog, [data-scroll]'))) e.preventDefault(); }, { passive: false });
   window.addEventListener('blur', () => { for (const [c, s] of held) if (s.size) { s.clear(); fire(c, false); } });
 })();

@@ -24,7 +24,7 @@
   body.x-on #xbtn{display:block}
   #xpop{position:fixed;inset:0;z-index:10001;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);font:14px system-ui,sans-serif;color:#eee}
   #xpop.open{display:flex}
-  #xpop .box{width:min(560px,94vw);max-height:86vh;overflow:auto;background:#121019;border:1px solid #ff7a00;border-radius:14px;padding:14px 16px 18px;box-shadow:0 0 40px rgba(255,122,0,.25)}
+  #xpop .box{width:min(560px,94vw);max-height:86vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;background:#121019;border:1px solid #ff7a00;border-radius:14px;padding:14px 16px 18px;box-shadow:0 0 40px rgba(255,122,0,.25)}
   #xpop h2{margin:0 0 8px;font:20px Bungee,Impact,sans-serif;color:#ff7a00;display:flex;justify-content:space-between;align-items:center}
   #xpop h3{margin:14px 0 6px;font:13px ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:#2ef2ff}
   #xpop .x{all:unset;cursor:pointer;font-size:22px;color:#aaa;padding:0 6px}
