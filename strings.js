@@ -12,10 +12,12 @@
 // registerDict(). Each module registers its own strings (see the registerDict calls).
 
 import { DE } from './de.js';
-export const LANGS = ['de', 'en', 'es', 'fr'];
+import { IT } from './it.js';
+export const LANGS = ['de', 'en', 'fr', 'it', 'es'];
+const OVERLAY = { de: DE, it: IT };
 const STORAGE_KEY = 'gta2-port-lang';
 
-const dicts = { de: { ...DE }, en: {}, es: {}, fr: {} };
+const dicts = { de: { ...DE }, it: { ...IT }, en: {}, es: {}, fr: {} };
 const listeners = new Set();
 let current = readStored();
 
@@ -59,7 +61,10 @@ export function t(key, vars) {
 
 /** Merges { en: {key: str}, es: {...}, fr: {...} } into the dictionaries. */
 export function registerDict(dict) {
-  for (const code of LANGS) Object.assign(dicts[code], code === 'de' ? Object.fromEntries(Object.entries(dict.en || {}).filter(([k]) => !(k in DE))) : (dict[code] || {}));
+  for (const code of LANGS) {
+    if (dict[code]) Object.assign(dicts[code], dict[code]);
+    else if (OVERLAY[code]) Object.assign(dicts[code], Object.fromEntries(Object.entries(dict.en || {}).filter(([k]) => !(k in OVERLAY[code]))));
+  }
 }
 
 const ATTRS = { title: 'title', placeholder: 'placeholder', aria: 'aria-label', alt: 'alt' };

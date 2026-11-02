@@ -329,10 +329,10 @@
   <header id="topnav" hidden>
     <a class="logo" href="#top">GTA2<small>Pocket</small></a>
     <nav data-i18n-aria="ui.nav.sections" aria-label="Sections">
-      <a href="#play">Modi</a><a href="#crews" hidden>Crews</a><a href="#options" hidden>Optionen</a><a href="#controls">Steuerung</a><a href="#help">Hilfe</a>
+      <a href="#play" data-i18n="ui.nav.play">Modi</a><a href="#crews" hidden>Crews</a><a href="#options" hidden>Optionen</a><a href="#controls" data-i18n="ui.nav.controls">Steuerung</a><a href="#help" data-i18n="ui.nav.help">Hilfe</a>
     </nav>
     <span class="grow"></span>
-    <button class="btn" type="button" data-play>Spielen</button>
+    <button class="btn" type="button" data-play data-i18n="ui.play">Spielen</button>
   </header>
   <main>
     <div id="landing" hidden>
@@ -343,18 +343,18 @@
           <span class="tag" data-i18n="ui.hero.tag">Respect is everything</span>
         </div>
         <div class="card hero-side">
-          <div class="kicker">&gt; SYSTEM BEREIT_ · FREEWARE · 1999</div>
+          <div class="kicker">&gt; READY_ · FREEWARE · 1999</div>
           <h1 class="g2title">GTA<b>2</b></h1>
-          <div class="sub">Pocket&nbsp;Edition</div>
-          <p class="lead">Das Original auf PC, Mac, Tablet und Handy. Mit Touch-Steuerung, Breitbild und Koop.</p>
+          <div class="sub" data-i18n="p.sub">Pocket Edition</div>
+          <p class="lead" data-i18n="p.lead">Das Original auf PC, Mac, Tablet und Handy. Mit Touch-Steuerung, Breitbild und Koop.</p>
           <progress id="files-bar" max="1" value="0"></progress>
           <span id="files-state" data-i18n="ui.files.preparing">Getting GTA2 ready…</span>
-          <div class="cta"><button class="btn" type="button" data-play>Spielen</button>
-          <button class="btn ghost" type="button" id="pick-local">GTA2.exe wählen</button></div>
+          <div class="cta"><button class="btn" type="button" data-play data-i18n="ui.play">Spielen</button>
+          <button class="btn ghost" type="button" id="pick-local" data-i18n="p.pick">GTA2.exe wählen</button></div>
           <ol class="steps">
-            <li><b>Automatisch:</b> „Spielen“ lädt die Spieldaten einmalig vom Internet Archive. Das kann je nach Server 10&nbsp;–&nbsp;70&nbsp;Minuten dauern. Seite offen und Display an lassen.</li>
-            <li><b>Schneller:</b> Datei <a href="https://archive.org/download/gta2_20200403/GTA2.exe" download>GTA2.exe direkt herunterladen</a> (362&nbsp;MB, offizielle Rockstar-Freeware), z.&nbsp;B. am PC, dann per AirDrop/iCloud aufs Gerät und hier auf „GTA2.exe wählen“ tippen. Entpacken dauert ca. 1 Minute.</li>
-            <li>Danach bleibt alles im Browser gespeichert – beim nächsten Mal sofort spielen.</li>
+            <li data-i18n="p.s1"><b>Automatisch:</b> „Spielen“ lädt die Spieldaten einmalig vom Internet Archive. Das kann je nach Server 10&nbsp;–&nbsp;70&nbsp;Minuten dauern. Seite offen und Display an lassen.</li>
+            <li data-i18n="p.s2"><b>Schneller:</b> Datei <a href="https://archive.org/download/gta2_20200403/GTA2.exe" download>GTA2.exe direkt herunterladen</a> (362&nbsp;MB, offizielle Rockstar-Freeware), z.&nbsp;B. am PC, dann per AirDrop/iCloud aufs Gerät und hier auf „GTA2.exe wählen“ tippen. Entpacken dauert ca. 1 Minute.</li>
+            <li data-i18n="p.s3">Danach bleibt alles im Browser gespeichert – beim nächsten Mal sofort spielen.</li>
           </ol>
           <div id="continue-root" hidden></div>
         </div>
@@ -362,22 +362,22 @@
 
       <section class="modes" id="play">
         <div class="card mode">
-          <h2>Story</h2>
+          <h2 data-i18n="p.storyT">Story</h2>
           <span class="pill" data-i18n="ui.mode.singlePillDistricts">3 districts</span><span class="pill" data-i18n="ui.mode.singlePillSaves">Saves in your browser</span>
-          <p>Downtown, Residential, Industrial. Respekt bei den Gangs, Cops im Nacken.</p>
-          <button class="btn" type="button" data-play>Spielen</button>
+          <p data-i18n="p.story">Downtown, Residential, Industrial. Respekt bei den Gangs, Cops im Nacken.</p>
+          <button class="btn" type="button" data-play data-i18n="ui.play">Spielen</button>
         </div>
         <div class="card mode">
-          <h2>Koop</h2>
+          <h2 data-i18n="p.coopT">Koop</h2>
           <span class="pill" data-i18n="ui.mode.friendsPillPlayers">Up to 6 players</span><span class="pill" data-i18n="ui.mode.roam">Free roam</span>
-          <p>Raum erstellen, Link teilen, bis zu 6 Spieler.</p>
-          <button class="btn alt" type="button" data-coop>Raum öffnen</button>
+          <p data-i18n="p.coop">Raum erstellen, Link teilen, bis zu 6 Spieler.</p>
+          <button class="btn alt" type="button" data-coop data-i18n="ui.mode.hostOrJoin">Raum öffnen</button>
         </div>
         <div class="card mode">
           <h2>Touch</h2>
           <span class="pill">Tablet</span><span class="pill">Handy</span>
-          <p>Virtueller Stick und Knöpfe erscheinen automatisch im Spiel. Tipp: „Zum Home-Bildschirm“ für Vollbild.</p>
-          <a class="btn ghost" href="#controls" onclick="setTimeout(()=>document.getElementById('tab-touch').click())">Steuerung</a>
+          <p data-i18n="p.touch">Virtueller Stick und Knöpfe erscheinen automatisch im Spiel. Tipp: „Zum Home-Bildschirm“ für Vollbild.</p>
+          <a class="btn ghost" href="#controls" onclick="setTimeout(()=>document.getElementById('tab-touch').click())" data-i18n="p.ctl">Steuerung</a>
         </div>
       </section>
 
@@ -427,10 +427,10 @@
       <section class="card faq" id="help">
         <h2 class="section-title">Hilfe</h2>
         <div class="guide" style="display:grid;gap:.6rem;margin:.4rem 0 1rem;font-size:14.5px;color:#cfcbd8;line-height:1.5">
-          <div><b style="color:#ff7a00">🕹 Steuerung (Tablet/Handy)</b><br>Links Joystick oder Steuerkreuz (Mini-Knopf darüber wechselt): Figur und Auto bewegen sich in die gedrückte Richtung. Rechts: Kampf/Schuss, Ein-/Aussteigen, Sprung/Handbremse, 🔫 Waffe wechseln; im Auto 📯 Hupe/Sirene und Rückwärts. In Menüs: großer OK-Knopf.</div>
-          <div><b style="color:#ff7a00">☰ Menü oben rechts</b><br>🗺 Karte (antippen setzt Wegpunkt) · Menü · Radio · 💾 Speichern · 📱 Neigen-Lenkung · ✥ Knöpfe verschieben und Größe ändern · Steuerung ausblenden (für Controller/Tastatur).</div>
-          <div><b style="color:#ff7a00">⭐ Extras (oben Mitte im Spiel)</b><br>Cheats, Autos herbeirufen, Garage, Teleport, Gang-Respekt, Spielmodi (Amoklauf, Überleben, Taxi, Stunt-Jagd), Jobs (🚑 Rettungsdienst, 🚓 Polizei, 🛡 SWAT mit Funk), Tageschallenge, Kinder-Modus, Erfolge und eine Kurzanleitung.</div>
-          <div><b style="color:#ff7a00">💾 Speichern</b><br>Automatisch alle 3 Minuten, beim Verlassen der App und nach Aufträgen. Beim nächsten Start „Weiterspielen“. Beim allerersten Spiel gibt es $20.000 Startkapital.</div>
+          <div data-i18n="p.g1"><b style="color:#ff7a00">🕹 Steuerung (Tablet/Handy)</b><br>Links Joystick oder Steuerkreuz (Mini-Knopf darüber wechselt): Figur und Auto bewegen sich in die gedrückte Richtung. Rechts: Kampf/Schuss, Ein-/Aussteigen, Sprung/Handbremse, 🔫 Waffe wechseln; im Auto 📯 Hupe/Sirene und Rückwärts. In Menüs: großer OK-Knopf.</div>
+          <div data-i18n="p.g2"><b style="color:#ff7a00">☰ Menü oben rechts</b><br>🗺 Karte (antippen setzt Wegpunkt) · Menü · Radio · 💾 Speichern · 📱 Neigen-Lenkung · ✥ Knöpfe verschieben und Größe ändern · Steuerung ausblenden (für Controller/Tastatur).</div>
+          <div data-i18n="p.g3"><b style="color:#ff7a00">⭐ Extras (oben Mitte im Spiel)</b><br>Cheats, Autos herbeirufen, Garage, Teleport, Gang-Respekt, Spielmodi (Amoklauf, Überleben, Taxi, Stunt-Jagd), Jobs (🚑 Rettungsdienst, 🚓 Polizei, 🛡 SWAT mit Funk), Tageschallenge, Kinder-Modus, Erfolge und eine Kurzanleitung.</div>
+          <div data-i18n="p.g4"><b style="color:#ff7a00">💾 Speichern</b><br>Automatisch alle 3 Minuten, beim Verlassen der App und nach Aufträgen. Beim nächsten Start „Weiterspielen“. Beim allerersten Spiel gibt es $20.000 Startkapital.</div>
           <div><b style="color:#ff7a00">👥 Koop</b><br>„Raum öffnen“ → Raum hosten und Link/QR teilen, oder unter „Mitspieler suchen“ einem offenen Raum beitreten. Modus wählt der Host (Freies Spiel, Gang Wars, Jeder gegen jeden). Im Spiel: 💬 Chat, 🏆 Tabelle, 🎮 Modi (Wettrennen, Fangen).</div>
         </div>
         <details open><summary data-i18n="ui.help.q1">What is this?</summary>
@@ -578,6 +578,7 @@
   <!-- strings.js is imported by shell.js (one module instance); it applies the stored
        language as soon as the page's markup is parsed. -->
   <script>window.GTA2_NO_DIRECT_DOWNLOAD=false;</script>
+  <script type="module" src="landing-i18n.js"></script>
   <script src="touch.js?v=1793623737" defer></script>
   <script src="coop-extras.js?v=1793623737" defer></script>
   <script src="extras.js?v=1793623737" defer></script>
