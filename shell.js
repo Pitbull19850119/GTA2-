@@ -1307,6 +1307,7 @@ async function start(getFiles, { cacheAfterStart = false, coop = null, loadSlot 
     }
     const radioKeys = wireRadioKeys(Module, audio, coop, () => !!(map.last && map.last.inCar));
     window.GTA2_inCar = () => !!(map.last && map.last.inCar);
+    window.GTA2_state = () => map.last;
     // The Controls screen: the game menu's Options (which launched GTA2 Manager) and the toolbar.
     const controls = new ControlsScreen({
       Module, keys: KEYS, defaults: PORT_CONTROLS, regPath: `${REG_ROOT}\\control`,
@@ -1395,6 +1396,7 @@ $('installer-file').addEventListener('change', async (e) => {
       else if (stage === 'unpack') setStatus(t('shell.unpacking'));
     });
     validate(files);
+    hideLanding();
     start(async () => files, { cacheAfterStart: true });
   } catch (err) {
     setStatus(err.message || String(err), true);

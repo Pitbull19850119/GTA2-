@@ -28,6 +28,7 @@
     label.button input { display: none; }
     #game { flex: 1; min-height: 0; display: flex; }
     #screen { flex: 1; width: 100%; height: 100%; display: block; outline: none; image-rendering: pixelated; }
+    #game { overflow: hidden; background: #000; position: relative; z-index: 5; }
     #status { position: fixed; left: 1rem; bottom: 2.2rem; margin: 0; color: var(--muted); }
     #status.error { color: #ff8a8a; }
     #state-toast { position: fixed; left: 50%; bottom: 18%; transform: translateX(-50%); z-index: 30; pointer-events: none;

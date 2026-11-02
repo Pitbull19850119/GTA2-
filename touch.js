@@ -63,7 +63,7 @@
     <div class="top">
       <div class="s z" data-k="Escape">Menü</div><div class="s z" data-k="KeyM">Karte</div>
       <div class="s z" data-k="KeyT">Radio</div><div class="s z" data-k="F5">💾 Speichern</div>
-      <div class="s z" id="tc-tilt">📱 Neigen</div><div class="s z" id="tc-edit">✥ Anpassen</div>
+      <div class="s z" id="tc-cam">🎥 3D-Kamera</div><div class="s z" id="tc-tilt">📱 Neigen</div><div class="s z" id="tc-edit">✥ Anpassen</div>
       <div class="s z" id="tc-toggle">⌨︎ aus</div>
     </div>
     <div class="stick z"><div class="knob"></div></div>
@@ -143,24 +143,74 @@
     el.addEventListener('pointercancel', up);
   });
 
-  // ---- Stick -> WASD + Pfeile ----
+  // ---- Stick ----
+  // Zu Fuß (normale Kamera): Figur läuft in die Richtung, in die der Stick zeigt.
+  // Im Auto oder mit 3D-Kamera: oben = Gas, unten = Bremse/rückwärts, links/rechts = lenken.
   const dirs = { up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'] };
   const setDir = (name, on, src = 'stick') => dirs[name].forEach((c) => hold(c, src, on));
-  let sid = null;
+  let sid = null, vec = null; // vec: {x,y} in -1..1, Bildschirm-y nach unten
+  let cam3d = false;
+  const menuOpen = () => !(window.GTA2_state && window.GTA2_state() && window.GTA2_state().hasPlayer);
+  const steer = () => {
+    if (!vec) { Object.keys(dirs).forEach((n) => setDir(n, false)); return; }
+    const mag = Math.hypot(vec.x, vec.y), t = 0.32;
+    const st = window.GTA2_state && window.GTA2_state();
+    const absolute = st && st.hasPlayer && !st.inCar && !cam3d;
+    if (!absolute) {
+      setDir('up', vec.y < -t); setDir('down', vec.y > t); setDir('left', vec.x < -t); setDir('right', vec.x > t);
+      return;
+    }
+    // Richtungs-Steuerung: heading h -> Blickrichtung (sin h, cos h); A dreht +h, D dreht -h
+    setDir('down', false);
+    if (mag < t) { setDir('up', false); setDir('left', false); setDir('right', false); return; }
+    const want = Math.atan2(vec.x, vec.y);
+    let diff = want - st.heading;
+    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+    const tol = 0.2;
+    setDir('left', diff > tol); setDir('right', diff < -tol);
+    setDir('up', Math.abs(diff) < 1.3);
+  };
+  setInterval(steer, 30);
   const move = (e) => {
     const r = stick.getBoundingClientRect();
     let x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2);
     const max = r.width / 2, d = Math.hypot(x, y);
     if (d > max) { x = x / d * max; y = y / d * max; }
     knob.style.transform = `translate(calc(-50% + ${x}px),calc(-50% + ${y}px))`;
-    const t = max * 0.32;
-    setDir('up', y < -t); setDir('down', y > t); setDir('left', x < -t); setDir('right', x > t);
+    vec = { x: x / max, y: y / max }; steer();
   };
-  const end = () => { sid = null; knob.style.transform = ''; Object.keys(dirs).forEach((n) => setDir(n, false)); };
+  const end = () => { sid = null; vec = null; knob.style.transform = ''; steer(); };
   stick.addEventListener('pointerdown', (e) => { if (editing) return; e.preventDefault(); sid = e.pointerId; stick.setPointerCapture(sid); move(e); });
   stick.addEventListener('pointermove', (e) => { if (e.pointerId === sid && !editing) move(e); });
   stick.addEventListener('pointerup', end);
   stick.addEventListener('pointercancel', end);
+
+  // ---- 3D-Kamera: geneigt und mitdrehend (Blick immer in Laufrichtung) ----
+  let camRot = 0;
+  const camBtn = $('#tc-cam');
+  const camLoop = () => {
+    const cv = document.getElementById('screen');
+    if (cv) {
+      if (cam3d) {
+        const st = window.GTA2_state && window.GTA2_state();
+        if (st && st.hasPlayer) {
+          let target = st.heading - Math.PI;
+          let d = Math.atan2(Math.sin(target - camRot), Math.cos(target - camRot));
+          camRot += d * 0.12;
+        }
+        cv.style.transformOrigin = '50% 50%';
+        cv.style.transform = `perspective(1800px) rotateX(34deg) scale(1.6) rotateZ(${(-camRot * 180 / Math.PI).toFixed(2)}deg)`;
+      } else if (cv.style.transform) cv.style.transform = '';
+    }
+    requestAnimationFrame(camLoop);
+  };
+  requestAnimationFrame(camLoop);
+  cam3d = store.get('cam3d', false);
+  camBtn.classList.toggle('on', cam3d);
+  camBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); cam3d = !cam3d; store.set('cam3d', cam3d); camBtn.classList.toggle('on', cam3d);
+    toast(cam3d ? '3D-Kamera an – Stick oben = vorwärts' : '3D-Kamera aus');
+  });
 
   // ---- Lenken durch Neigen (nur im Auto) ----
   let tiltOn = false;
