@@ -64,9 +64,27 @@ uniform sampler2D uTexture;
 uniform int uBlend;
 layout(location = 0) out vec4 outColour;
 layout(location = 1) out vec4 outDepth;  // GTA2 Pocket: Tiefe (rhw) für Schatten/AO
+uniform int uSmooth;                      // GTA2 Pocket: HD-Glättung (weich statt Pixeltreppen)
+vec4 smoothTex(vec2 uv) {
+  ivec2 sz = textureSize(uTexture, 0);
+  vec2 p = uv * vec2(sz) - 0.5;
+  ivec2 i = ivec2(floor(p));
+  vec2 f = fract(p);
+  ivec2 m = sz - 1;
+  vec4 a = texelFetch(uTexture, clamp(i, ivec2(0), m), 0);
+  vec4 b = texelFetch(uTexture, clamp(i + ivec2(1, 0), ivec2(0), m), 0);
+  vec4 c = texelFetch(uTexture, clamp(i + ivec2(0, 1), ivec2(0), m), 0);
+  vec4 d = texelFetch(uTexture, clamp(i + ivec2(1, 1), ivec2(0), m), 0);
+  float wa = (1.0 - f.x) * (1.0 - f.y) * step(0.5, a.a), wb = f.x * (1.0 - f.y) * step(0.5, b.a);
+  float wc = (1.0 - f.x) * f.y * step(0.5, c.a), wd = f.x * f.y * step(0.5, d.a);
+  float al = wa + wb + wc + wd;
+  vec3 col = (a.rgb * wa + b.rgb * wb + c.rgb * wc + d.rgb * wd) / max(al, 1e-4);
+  return vec4(col, al);
+}
 void main() {
-  vec4 t = texture(uTexture, vUv);
+  vec4 t = uSmooth == 1 ? smoothTex(vUv) : texture(uTexture, vUv);
   if (t.a < 0.5) discard;                 // palette colour 0 is transparent
+  if (uSmooth == 1) t.a = 1.0;
   vec3 rgb = t.rgb * vColour.rgb;         // texture * diffuse
   float a = uBlend == 1 ? t.a * vColour.a : 1.0;
   outColour = vec4(rgb, a);
@@ -162,6 +180,10 @@ export class Gta2Renderer {
     this.program = program;
     this.uView = gl.getUniformLocation(program, 'uView');
     this.uBlend = gl.getUniformLocation(program, 'uBlend');
+    this.uSmooth = gl.getUniformLocation(program, 'uSmooth');
+    try { this.smooth = localStorage.getItem('gta2-smooth') === '1'; } catch { this.smooth = false; }
+    window.GTA2_setSmooth = (on) => { this.smooth = !!on; try { localStorage.setItem('gta2-smooth', on ? '1' : '0'); } catch {} };
+    window.GTA2_smooth = () => this.smooth;
     gl.useProgram(program);
     gl.uniform1i(gl.getUniformLocation(program, 'uTexture'), 0);
 
@@ -325,6 +347,7 @@ export class Gta2Renderer {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
     gl.bufferData(gl.ARRAY_BUFFER, heap.subarray(vertPtr, vertPtr + vertCount * VERTEX_BYTES), gl.STREAM_DRAW);
     gl.uniform4f(this.uView, 2 / refW, -2 / REF_H, -1, 1);
+    gl.uniform1i(this.uSmooth, this.smooth ? 1 : 0);
     gl.activeTexture(gl.TEXTURE0);
     this.blend = -1;
 

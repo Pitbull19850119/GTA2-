@@ -272,6 +272,7 @@
       <h3>🎨 Grafik</h3>
       <div class="row">${[['0', 'Original'], ['1', 'Modern'], ['2', 'Ultra']].map(([v, n]) => `<button class="b ${String(window.GTA2_graphics ? window.GTA2_graphics() : 1) === v ? 'on' : ''}" data-gfx="${v}">${n}</button>`).join('')}</div>
       <div class="note">Modern/Ultra: echte Schatten von Gebäuden, weiche Kontaktschatten (Ambient Occlusion), Schärfe und Leuchten heller Lichter – Farben bleiben original. Ultra = stärker, braucht mehr Leistung.${window.GTA2_gfxInfo ? ' · Status: ' + (window.GTA2_gfxInfo().shadows ? '✅ Schatten aktiv' : window.GTA2_gfxInfo().post ? '⚠️ nur Schärfe (Schatten nicht unterstützt)' : '❌ nicht unterstützt') : ''}</div>
+      <div class="tg"><div>✨ HD-Glättung<small>Figuren, Autos und Texturen weich statt in Pixel-Treppen</small></div><div class="sw ${window.GTA2_smooth && window.GTA2_smooth() ? 'on' : ''}" data-a="smooth"></div></div>
       <h3>📲 Spielstände übertragen (PC ↔ Handy)</h3>
       <div class="row"><button class="b" data-a="export">⬇️ Exportieren (Datei)</button><button class="b" data-a="import">⬆️ Importieren</button></div>
       <div class="note">Am einen Gerät exportieren, die Datei per AirDrop, iCloud, Mail oder USB aufs andere Gerät bringen und dort importieren. Danach auf der Startseite „Weiterspielen“.</div>
@@ -301,6 +302,7 @@
     else if (el.dataset.gfx) { if (window.GTA2_setGraphics) window.GTA2_setGraphics(+el.dataset.gfx); render(); }
     else if (a === 'export') { const b = document.getElementById('export-saves'); if (b) { b.click(); shout('⬇️ Export gestartet'); } }
     else if (a === 'import') { const i = document.getElementById('import-saves'); if (i) i.click(); }
+    else if (a === 'smooth') { if (window.GTA2_setSmooth) window.GTA2_setSmooth(!window.GTA2_smooth()); render(); }
     else if (a === 'radar') { const m = window.GTA2_map; if (m) m.setMinimap(!m.minimapOn); render(); }
     else if (a === 'voice') { voice = !voice; ls.set('voice', voice); render(); }
     else if (el.dataset.m) {
