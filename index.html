@@ -426,6 +426,13 @@
 
       <section class="card faq" id="help">
         <h2 class="section-title">Hilfe</h2>
+        <div class="guide" style="display:grid;gap:.6rem;margin:.4rem 0 1rem;font-size:14.5px;color:#cfcbd8;line-height:1.5">
+          <div><b style="color:#ff7a00">🕹 Steuerung (Tablet/Handy)</b><br>Links Joystick oder Steuerkreuz (Mini-Knopf darüber wechselt): Figur und Auto bewegen sich in die gedrückte Richtung. Rechts: Kampf/Schuss, Ein-/Aussteigen, Sprung/Handbremse, 🔫 Waffe wechseln; im Auto 📯 Hupe/Sirene und Rückwärts. In Menüs: großer OK-Knopf.</div>
+          <div><b style="color:#ff7a00">☰ Menü oben rechts</b><br>🗺 Karte (antippen setzt Wegpunkt) · Menü · Radio · 💾 Speichern · 📱 Neigen-Lenkung · ✥ Knöpfe verschieben und Größe ändern · Steuerung ausblenden (für Controller/Tastatur).</div>
+          <div><b style="color:#ff7a00">⭐ Extras (oben Mitte im Spiel)</b><br>Cheats, Autos herbeirufen, Garage, Teleport, Gang-Respekt, Spielmodi (Amoklauf, Überleben, Taxi, Stunt-Jagd), Jobs (🚑 Rettungsdienst, 🚓 Polizei, 🛡 SWAT mit Funk), Tageschallenge, Kinder-Modus, Erfolge und eine Kurzanleitung.</div>
+          <div><b style="color:#ff7a00">💾 Speichern</b><br>Automatisch alle 3 Minuten, beim Verlassen der App und nach Aufträgen. Beim nächsten Start „Weiterspielen“. Beim allerersten Spiel gibt es $20.000 Startkapital.</div>
+          <div><b style="color:#ff7a00">👥 Koop</b><br>„Raum öffnen“ → Raum hosten und Link/QR teilen, oder unter „Mitspieler suchen“ einem offenen Raum beitreten. Modus wählt der Host (Freies Spiel, Gang Wars, Jeder gegen jeden). Im Spiel: 💬 Chat, 🏆 Tabelle, 🎮 Modi (Wettrennen, Fangen).</div>
+        </div>
         <details open><summary data-i18n="ui.help.q1">What is this?</summary>
           <p data-i18n="ui.help.a1">Grand Theft Auto 2 (DMA Design, 1999), running from the community's reconstruction of its original code,
             compiled for the web. It plays like the original, with modern extras: widescreen, a smoother camera,
@@ -571,8 +578,9 @@
   <!-- strings.js is imported by shell.js (one module instance); it applies the stored
        language as soon as the page's markup is parsed. -->
   <script>window.GTA2_NO_DIRECT_DOWNLOAD=false;</script>
-  <script src="touch.js?v=1793623736" defer></script>
-  <script src="coop-extras.js?v=1793623736" defer></script>
+  <script src="touch.js?v=1793623737" defer></script>
+  <script src="coop-extras.js?v=1793623737" defer></script>
+  <script src="extras.js?v=1793623737" defer></script>
   <script>if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
   <script>addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("pick-local");b&&b.addEventListener("click",()=>document.getElementById("installer-file").click());});</script>
   <script type="module" src="shell.js?v=11ff9757d2"></script>

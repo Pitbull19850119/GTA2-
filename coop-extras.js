@@ -171,3 +171,62 @@
     }
   }, 200);
 })();
+
+// ---------- Mitspieler suchen: öffentliche Räume über einen gemeinsamen Peer-to-Peer-Kanal ----------
+(() => {
+  let room = null, ann = null;
+  const rooms = new Map(); // code -> {name, mode, count, ts}
+  const MODES = { roam: 'Freies Spiel', wars: 'Gang Wars', ffa: 'Jeder gegen jeden' };
+  let pub = true;
+  try { pub = localStorage.getItem('gta2-public-room') !== '0'; } catch {}
+  const connect = async () => {
+    if (room) return;
+    try {
+      const { joinRoom } = await import('./vendor/trystero/torrent.mjs?v=11ff9757d2');
+      room = joinRoom({ appId: 'gta2-pocket-public-1' }, 'lobby');
+      const [send, get] = room.makeAction('ann');
+      ann = send;
+      get((d) => { if (d && d.code) { if (d.closed) rooms.delete(d.code); else rooms.set(d.code, { ...d, ts: Date.now() }); draw(); } });
+    } catch { room = null; }
+  };
+  const box = document.createElement('div');
+  box.id = 'cx-find';
+  box.innerHTML = `<style>
+    #cx-find{margin:.8rem 0;padding:.8rem;border:1px solid rgba(46,242,255,.4);background:rgba(46,242,255,.05)}
+    #cx-find h4{margin:0 0 .5rem;font:15px Bungee,Impact,sans-serif;color:#2ef2ff}
+    #cx-find .r{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+    #cx-find .r small{color:#999}#cx-find .empty{color:#999;font-size:13px}
+    #cx-find label{display:flex;gap:6px;align-items:center;font-size:13px;margin-top:.5rem;color:#ccc}
+  </style><h4>🔎 Mitspieler suchen</h4><div class="list"><div class="empty">Suche offene Räume…</div></div>
+  <label><input type="checkbox" id="cx-pub"> Meinen Raum öffentlich anzeigen (wenn ich hoste)</label>`;
+  const list = box.querySelector('.list');
+  box.querySelector('#cx-pub').checked = pub;
+  box.querySelector('#cx-pub').addEventListener('change', (e) => { pub = e.target.checked; try { localStorage.setItem('gta2-public-room', pub ? '1' : '0'); } catch {} });
+  const draw = () => {
+    const now = Date.now();
+    for (const [c, r] of rooms) if (now - r.ts > 15000) rooms.delete(c);
+    const mine = window.GTA2_lobby && window.GTA2_lobby.code;
+    const items = [...rooms.values()].filter((r) => r.code !== mine);
+    list.innerHTML = items.length ? '' : '<div class="empty">Gerade keine offenen Räume. Hoste selbst – dein Raum erscheint hier für andere.</div>';
+    for (const r of items) {
+      const row = document.createElement('div'); row.className = 'r';
+      row.innerHTML = `<div>${r.name || 'Spieler'}s Raum<br><small>${MODES[r.mode] || 'Koop'} · ${r.count}/6 Spieler</small></div>`;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = 'Beitreten';
+      b.onclick = () => { const i = document.getElementById('coop-code'); i.value = r.code; document.getElementById('coop-join').click(); };
+      row.appendChild(b); list.appendChild(row);
+    }
+  };
+  setInterval(() => {
+    const coop = document.getElementById('coop');
+    if (!coop || coop.hidden) return;
+    if (!box.isConnected) coop.insertBefore(box, coop.children[2] || null);
+    connect();
+    const L = window.GTA2_lobby;
+    if (ann && L && L.host && L.code && pub) {
+      const name = (document.getElementById('coop-name') || {}).value || 'Spieler';
+      const mode = (L.settings && L.settings.mode) || 'roam';
+      ann({ code: L.code, name, mode, count: (L.players || []).length });
+    }
+    draw();
+  }, 4000);
+})();

@@ -1302,7 +1302,7 @@ async function start(getFiles, { cacheAfterStart = false, coop = null, loadSlot 
       document.addEventListener('visibilitychange', () => { if (document.hidden) autoSave(); });
       window.addEventListener('pagehide', autoSave);
     }
-    // GTA2 Pocket: Startkapital $20.000 bei jedem neuen Spiel / neuen Bezirk (nicht nach dem Laden eines Spielstands)
+    // GTA2 Pocket: Startkapital $20.000 nur beim allerersten Spiel
     if (states) {
       let seenEpoch = null;
       setInterval(() => {
@@ -1310,7 +1310,12 @@ async function start(getFiles, { cacheAfterStart = false, coop = null, loadSlot 
           const st = map.last;
           if (!st || !st.hasPlayer || st.epoch === seenEpoch) return;
           seenEpoch = st.epoch;
-          if (states.rules().cash === 0) Module.ccall('gta2_dev_add_cash', 'number', ['number'], [20000]);
+          let given = false;
+          try { given = localStorage.getItem('gta2-startcash') === '1'; } catch { /* ignore */ }
+          if (!given && states.rules().cash === 0) {
+            Module.ccall('gta2_dev_add_cash', 'number', ['number'], [20000]);
+            try { localStorage.setItem('gta2-startcash', '1'); } catch { /* ignore */ }
+          }
         } catch { /* ignore */ }
       }, 1000);
     }
@@ -1327,6 +1332,7 @@ async function start(getFiles, { cacheAfterStart = false, coop = null, loadSlot 
     const radioKeys = wireRadioKeys(Module, audio, coop, () => !!(map.last && map.last.inCar));
     window.GTA2_inCar = () => !!(map.last && map.last.inCar);
     window.GTA2_state = () => map.last;
+    window.GTA2_map = map;
     // The Controls screen: the game menu's Options (which launched GTA2 Manager) and the toolbar.
     const controls = new ControlsScreen({
       Module, keys: KEYS, defaults: PORT_CONTROLS, regPath: `${REG_ROOT}\\control`,
@@ -1774,8 +1780,9 @@ function wireCoopLobby() {
     $('coop-start').disabled = !!why;
     $('coop-start-why').textContent = why;
     // on our server: one link that logs a friend in and opens this room
-    $('coop-invite').hidden = !(lobby && onSite);
-    if (lobby && onSite) {
+    $('coop-invite').hidden = !lobby;
+    window.GTA2_lobby = lobby || null;
+    if (lobby) {
       const link = new URL('./', location.href);
       if (serverConfig.invite) link.searchParams.set('invite', serverConfig.invite);
       link.searchParams.set('coop', '');
