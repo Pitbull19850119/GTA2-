@@ -1,5 +1,5 @@
 // GTA2 Pocket: offline cache for the page itself (game data lives in IndexedDB).
-const C = 'gta2-pocket-v9';
+const C = 'gta2-pocket-v10';
 self.addEventListener('install', (e) => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', (e) => {

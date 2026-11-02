@@ -1295,6 +1295,13 @@ async function start(getFiles, { cacheAfterStart = false, coop = null, loadSlot 
     const states = coop ? null : new SaveStates({ Module, renderer, map });
     const saves = states ? new SavesScreen({ states, pause: pauseGame, onClose: () => canvas.focus() }) : null;
     window.gta2.states = states;
+    // GTA2 Pocket: automatisch speichern alle 3 Minuten und beim Verlassen der App (gratis, Platz „Autospeichern“)
+    if (states) {
+      const autoSave = () => { try { if (!states.whyNot({ free: true })) states.save('auto', { free: true, quiet: true }); } catch { /* ignore */ } };
+      setInterval(autoSave, 180000);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) autoSave(); });
+      window.addEventListener('pagehide', autoSave);
+    }
     if (states) {
       const savesTitle = () => { $('saves-open').title = t('shell.savesTitle', { key: SAVE_KEY }); };
       savesTitle();
