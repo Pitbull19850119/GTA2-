@@ -63,7 +63,8 @@
   #tc .wpn{position:absolute;right:calc(146px*var(--sc));bottom:calc(124px*var(--sc));display:none;gap:6px}
   #tc .wpn.open{display:flex}
   #tc .wpn .b{position:static}
-  #tc:not(.car) .k-horn{display:none}
+  #tc .b.k-rev{right:calc(160px*var(--sc));bottom:calc(4px*var(--sc))}
+  #tc:not(.car) .k-horn,#tc:not(.car) .k-rev{display:none}
   /* Menü-Modus (Titelmenü, Pausen-Menüs): nur OK / Zurück */
   #tc .menu{position:absolute;right:calc(20px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));display:none;gap:12px;align-items:flex-end}
   #tc.inmenu .menu{display:flex}
@@ -109,6 +110,7 @@
       <div class="b z mid k-enter" data-k="Enter" data-foot="Ein-<br>steigen" data-car="Aus-<br>steigen">Ein-<br>steigen</div>
       <div class="b z mid k-jump" data-k="Space" data-foot="Sprung" data-car="Hand-<br>bremse">Sprung</div>
       <div class="b z sm k-horn" data-k="KeyI">📯</div>
+      <div class="b z mid k-rev" id="tc-rev">Rück-<br>wärts</div>
       <div class="b z sm k-wpn" id="tc-wpn">🔫</div>
       <div class="wpn"><div class="b z sm" data-k="KeyJ">◀</div><div class="b z sm" data-k="KeyK">▶</div></div>
     </div>
@@ -216,13 +218,18 @@
   // heading h -> Blickrichtung (sin h, cos h), Bildschirm-y nach unten; A dreht +h, D dreht -h.
   const dirs = { up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'] };
   const setDir = (name, on, src = 'stick') => dirs[name].forEach((c) => hold(c, src, on));
-  let sid = null, vec = null;
+  let sid = null, vec = null, reverse = false;
   const steer = () => {
-    if (!vec) { Object.keys(dirs).forEach((n) => setDir(n, false)); return; }
-    const mag = Math.hypot(vec.x, vec.y), t = 0.3;
+    if (!vec && !reverse) { Object.keys(dirs).forEach((n) => setDir(n, false)); return; }
+    const mag = vec ? Math.hypot(vec.x, vec.y) : 0, t = 0.3;
     const st = state();
-    if (!st || !st.hasPlayer) { // Menüs: Pfeiltasten
+    if (!st || !st.hasPlayer || (!st.inCar && !vec)) { if (!vec) { Object.keys(dirs).forEach((n) => setDir(n, false)); return; } // Menüs: Pfeiltasten
       setDir('up', vec.y < -t); setDir('down', vec.y > t); setDir('left', vec.x < -t); setDir('right', vec.x > t);
+      return;
+    }
+    if (st.inCar && reverse) {
+      setDir('up', false); setDir('down', true);
+      setDir('left', !!vec && vec.x < -t); setDir('right', !!vec && vec.x > t);
       return;
     }
     if (mag < t) { Object.keys(dirs).forEach((n) => setDir(n, false)); return; }
@@ -238,6 +245,12 @@
     }
   };
   setInterval(steer, 30);
+
+  // ---- Rückwärts (nur im Auto, gedrückt halten; Stick links/rechts lenkt dabei) ----
+  const rev = $('#tc-rev');
+  rev.addEventListener('pointerdown', (e) => { if (editing) return; e.preventDefault(); rev.setPointerCapture(e.pointerId); rev.classList.add('on'); buzz(); reverse = true; steer(); });
+  const revUp = (e) => { e.preventDefault(); rev.classList.remove('on'); reverse = false; steer(); };
+  rev.addEventListener('pointerup', revUp); rev.addEventListener('pointercancel', revUp);
   const move = (e) => {
     const r = stick.getBoundingClientRect();
     let x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2);
