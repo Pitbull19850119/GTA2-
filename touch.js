@@ -1,4 +1,5 @@
-// GTA2 Pocket – Touch-Steuerung: Stick, kontextabhängige Knöpfe, Neigen-Lenkung, Speichern, Layout anpassen.
+// GTA2 Pocket – Touch-Steuerung: Richtungs-Stick (zu Fuß + Auto), dezente Kontext-Knöpfe, Menü-Modus,
+// aufklappbare Waffen und Extras, Neigen-Lenkung, Layout anpassen.
 (() => {
   const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
   if (!isTouch && !new URLSearchParams(location.search).has('touch')) return;
@@ -18,41 +19,60 @@
     held.set(code, set);
     if (was !== set.size > 0) fire(code, set.size > 0);
   };
-  const buzz = (ms = 12) => { try { navigator.vibrate && navigator.vibrate(ms); } catch {} };
+  const buzz = (ms = 10) => { try { navigator.vibrate && navigator.vibrate(ms); } catch {} };
   const store = {
     get(k, d) { try { const v = localStorage.getItem('gta2-touch-' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
     set(k, v) { try { localStorage.setItem('gta2-touch-' + k, JSON.stringify(v)); } catch {} },
   };
+  const state = () => (typeof window.GTA2_state === 'function' ? window.GTA2_state() : null);
 
   const css = document.createElement('style');
   css.textContent = `
-  #tc{position:fixed;inset:0;z-index:9999;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
-      font:600 13px system-ui,sans-serif;display:none;--sc:1}
-  body.tc-on #tc{display:block}
   body.tc-on #topnav{display:none!important}
+  #tc{position:fixed;inset:0;z-index:9999;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+      font:600 12px system-ui,sans-serif;display:none;--sc:1;color:#fff}
+  body.tc-on #tc{display:block}
   #tc .z{pointer-events:auto;touch-action:none}
-  #tc .stick{position:absolute;width:calc(170px*var(--sc));height:calc(170px*var(--sc));border-radius:50%;
-      background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.28)}
-  #tc .knob{position:absolute;left:50%;top:50%;width:41%;height:41%;transform:translate(-50%,-50%);border-radius:50%;
-      background:rgba(255,122,0,.6);border:2px solid rgba(255,255,255,.6);pointer-events:none}
-  #tc .btns{position:absolute;display:grid;grid-template-columns:repeat(3,calc(74px*var(--sc)));gap:calc(12px*var(--sc))}
-  #tc .b{width:calc(74px*var(--sc));height:calc(74px*var(--sc));border-radius:50%;background:rgba(0,0,0,.42);
-      border:2px solid rgba(255,255,255,.45);color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;
-      line-height:1.05;font-size:calc(13px*var(--sc))}
-  #tc .b.on{background:rgba(255,122,0,.8);color:#111}
-  #tc .b.big{background:rgba(255,46,77,.55)}
-  #tc.car .b.carx{border-color:#2ef2ff}
-  #tc .top{position:absolute;top:calc(8px + env(safe-area-inset-top));right:calc(8px + env(safe-area-inset-right));
-      display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:92vw}
-  #tc .s{padding:8px 11px;border-radius:9px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.4);color:#fff}
-  #tc .s.on{background:rgba(255,122,0,.85);color:#111}
-  #tc.hide .stick,#tc.hide .btns{display:none}
+  #tc .stick{position:absolute;width:calc(150px*var(--sc));height:calc(150px*var(--sc));border-radius:50%;
+      background:radial-gradient(circle,rgba(255,255,255,.07),rgba(255,255,255,.02) 70%);border:1px solid rgba(255,255,255,.14)}
+  #tc .knob{position:absolute;left:50%;top:50%;width:38%;height:38%;transform:translate(-50%,-50%);border-radius:50%;
+      background:rgba(255,255,255,.22);box-shadow:0 0 0 1px rgba(255,255,255,.25);pointer-events:none;transition:background .15s}
+  #tc .stick.act .knob{background:rgba(255,122,0,.55)}
+  #tc .pad{position:absolute;width:calc(190px*var(--sc));height:calc(170px*var(--sc))}
+  #tc .b{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.05;
+      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.85);
+      font-size:calc(11px*var(--sc));backdrop-filter:blur(2px);transition:background .1s,transform .1s}
+  #tc .b.on{background:rgba(255,122,0,.6);color:#fff;transform:scale(.94)}
+  #tc .b.main{width:calc(78px*var(--sc));height:calc(78px*var(--sc));right:0;bottom:0;background:rgba(255,46,77,.22);border-color:rgba(255,46,77,.45);font-size:calc(13px*var(--sc))}
+  #tc .b.mid{width:calc(58px*var(--sc));height:calc(58px*var(--sc))}
+  #tc .b.sm{width:calc(42px*var(--sc));height:calc(42px*var(--sc));font-size:calc(15px*var(--sc))}
+  #tc .b.k-enter{right:calc(88px*var(--sc));bottom:calc(6px*var(--sc))}
+  #tc .b.k-jump{right:calc(10px*var(--sc));bottom:calc(88px*var(--sc))}
+  #tc .b.k-horn{right:calc(80px*var(--sc));bottom:calc(80px*var(--sc))}
+  #tc .b.k-wpn{right:calc(150px*var(--sc));bottom:calc(76px*var(--sc))}
+  #tc .wpn{position:absolute;right:calc(146px*var(--sc));bottom:calc(124px*var(--sc));display:none;gap:6px}
+  #tc .wpn.open{display:flex}
+  #tc .wpn .b{position:static}
+  #tc:not(.car) .k-horn{display:none}
+  /* Menü-Modus (Titelmenü, Pausen-Menüs): nur OK / Zurück */
+  #tc .menu{position:absolute;right:calc(20px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));display:none;gap:12px;align-items:flex-end}
+  #tc.inmenu .menu{display:flex}
+  #tc.inmenu .pad{display:none}
+  #tc .menu .b{position:static}
+  #tc .menu .ok{width:92px;height:92px;font-size:20px;background:rgba(255,122,0,.35);border-color:rgba(255,122,0,.7)}
+  #tc .menu .esc{width:58px;height:58px;font-size:12px}
+  /* Extras: aufklappbar oben rechts */
+  #tc .top{position:absolute;top:calc(8px + env(safe-area-inset-top));right:calc(8px + env(safe-area-inset-right));display:flex;gap:6px;align-items:flex-start}
+  #tc .s{padding:7px 10px;border-radius:9px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.9)}
+  #tc .s.on{background:rgba(255,122,0,.75);color:#111}
+  #tc .more{display:none;flex-direction:column;gap:6px;position:absolute;top:38px;right:0;padding:8px;border-radius:12px;background:rgba(0,0,0,.7)}
+  #tc .more.open{display:flex}
+  #tc.hide .stick,#tc.hide .pad,#tc.hide .menu{display:none}
   #tc .toast{position:absolute;left:50%;top:22%;transform:translateX(-50%);padding:10px 16px;border-radius:10px;
-      background:rgba(0,0,0,.75);color:#fff;opacity:0;transition:opacity .25s;pointer-events:none}
+      background:rgba(0,0,0,.75);opacity:0;transition:opacity .25s;pointer-events:none}
   #tc .toast.show{opacity:1}
-  #tc.edit .stick,#tc.edit .btns{outline:2px dashed #2ef2ff;outline-offset:6px}
-  #tc .editbar{position:absolute;left:50%;top:40%;transform:translateX(-50%);display:none;
-      gap:10px;align-items:center;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.8);color:#fff}
+  #tc.edit .stick,#tc.edit .pad{outline:2px dashed #2ef2ff;outline-offset:6px}
+  #tc .editbar{position:absolute;left:50%;top:40%;transform:translateX(-50%);display:none;gap:10px;align-items:center;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.8)}
   #tc.edit .editbar{display:flex}
   #tc .editbar input{width:140px}`;
   document.head.appendChild(css);
@@ -61,47 +81,71 @@
   root.id = 'tc';
   root.innerHTML = `
     <div class="top">
-      <div class="s z" data-k="Escape">Menü</div><div class="s z" data-k="KeyM">Karte</div>
-      <div class="s z" data-k="KeyT">Radio</div><div class="s z" data-k="F5">💾 Speichern</div>
-      <div class="s z" id="tc-tilt">📱 Neigen</div><div class="s z" id="tc-edit">✥ Anpassen</div>
-      <div class="s z" id="tc-toggle">⌨︎ aus</div>
+      <div class="s z" data-k="KeyM">🗺</div>
+      <div class="s z" id="tc-more">☰</div>
+      <div class="more z">
+        <div class="s z" data-k="Escape">Menü</div>
+        <div class="s z" data-k="KeyT">📻 Radio</div>
+        <div class="s z" data-k="F5">💾 Speichern</div>
+        <div class="s z" id="tc-tilt">📱 Neigen</div>
+        <div class="s z" id="tc-edit">✥ Anpassen</div>
+        <div class="s z" id="tc-toggle">⌨︎ ausblenden</div>
+      </div>
     </div>
     <div class="stick z"><div class="knob"></div></div>
-    <div class="btns z">
-      <div class="b z" data-k="KeyJ">◀<br>Waffe</div><div class="b z" data-k="KeyI">Hupe</div><div class="b z" data-k="KeyK">Waffe<br>▶</div>
-      <div class="b z carx" data-k="Space" data-foot="Sprung" data-car="Hand-<br>bremse">Sprung</div>
-      <div class="b z carx" data-k="Enter" data-foot="Ein-<br>steigen" data-car="Aus-<br>steigen">Ein-<br>steigen</div>
-      <div class="b z big" data-k="KeyL">Schuss</div>
+    <div class="pad z">
+      <div class="b z main" data-k="KeyL">Schuss</div>
+      <div class="b z mid k-enter" data-k="Enter" data-foot="Ein-<br>steigen" data-car="Aus-<br>steigen">Ein-<br>steigen</div>
+      <div class="b z mid k-jump" data-k="Space" data-foot="Sprung" data-car="Hand-<br>bremse">Sprung</div>
+      <div class="b z sm k-horn" data-k="KeyI">📯</div>
+      <div class="b z sm k-wpn" id="tc-wpn">🔫</div>
+      <div class="wpn"><div class="b z sm" data-k="KeyJ">◀</div><div class="b z sm" data-k="KeyK">▶</div></div>
+    </div>
+    <div class="menu z">
+      <div class="b z esc" data-k="Escape">Zurück</div>
+      <div class="b z ok" data-k="Enter">OK</div>
     </div>
     <div class="toast"></div>
     <div class="editbar z">Größe <input type="range" min="0.7" max="1.5" step="0.05" id="tc-size"> <div class="s z" id="tc-reset">Zurücksetzen</div> <div class="s z on" id="tc-done">Fertig</div></div>`;
   document.body.appendChild(root);
 
   const $ = (s) => root.querySelector(s);
-  const stick = $('.stick'), knob = $('.knob'), btns = $('.btns'), toastEl = $('.toast');
+  const stick = $('.stick'), knob = $('.knob'), pad = $('.pad'), toastEl = $('.toast');
   let toastT;
   const toast = (msg) => { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('show'), 1800); };
 
-  // ---- Kontext: zu Fuß / im Auto ----
-  let inCar = null;
+  // ---- Kontext: Menü / zu Fuß / Auto ----
+  let ctx = '';
   setInterval(() => {
-    const now = typeof window.GTA2_inCar === 'function' ? window.GTA2_inCar() : false;
-    if (now === inCar) return;
-    inCar = now; root.classList.toggle('car', now);
-    root.querySelectorAll('[data-foot]').forEach((el) => { el.innerHTML = now ? el.dataset.car : el.dataset.foot; });
-  }, 250);
+    const st = state();
+    const now = !st || !st.hasPlayer ? 'menu' : st.inCar ? 'car' : 'foot';
+    if (now === ctx) return;
+    ctx = now;
+    root.classList.toggle('inmenu', now === 'menu');
+    root.classList.toggle('car', now === 'car');
+    root.querySelectorAll('[data-foot]').forEach((el) => { el.innerHTML = now === 'car' ? el.dataset.car : el.dataset.foot; });
+  }, 200);
+
+  // ---- Aufklappen ----
+  const more = $('.more'), wpn = $('.wpn');
+  $('#tc-more').addEventListener('pointerdown', (e) => { e.preventDefault(); more.classList.toggle('open'); $('#tc-more').classList.toggle('on', more.classList.contains('open')); });
+  let wpnT;
+  $('#tc-wpn').addEventListener('pointerdown', (e) => {
+    e.preventDefault(); buzz(); wpn.classList.toggle('open');
+    clearTimeout(wpnT); if (wpn.classList.contains('open')) wpnT = setTimeout(() => wpn.classList.remove('open'), 4000);
+  });
 
   // ---- Layout ----
-  const DEFAULT = { sc: 1, stick: null, btns: null };
-  let layout = { ...DEFAULT, ...store.get('layout', {}) };
+  const DEFAULT = { sc: 1, stick: null, pad: null };
+  let layout = { ...DEFAULT, ...store.get('layout2', {}) };
   const place = () => {
     root.style.setProperty('--sc', layout.sc);
     const pos = (el, p, side) => {
       el.style.left = el.style.right = el.style.top = el.style.bottom = '';
       if (p) { el.style.left = p[0] * 100 + 'vw'; el.style.top = p[1] * 100 + 'vh'; }
-      else { el.style[side] = `calc(20px + env(safe-area-inset-${side}))`; el.style.bottom = 'calc(20px + env(safe-area-inset-bottom))'; }
+      else { el.style[side] = `calc(22px + env(safe-area-inset-${side}))`; el.style.bottom = 'calc(22px + env(safe-area-inset-bottom))'; }
     };
-    pos(stick, layout.stick, 'left'); pos(btns, layout.btns, 'right');
+    pos(stick, layout.stick, 'left'); pos(pad, layout.pad, 'right');
   };
   place();
   $('#tc-size').value = layout.sc;
@@ -109,7 +153,7 @@
   let editing = false;
   const setEdit = (on) => {
     editing = on; root.classList.toggle('edit', on); $('#tc-edit').classList.toggle('on', on);
-    if (!on) store.set('layout', layout); else toast('Stick und Knöpfe ziehen, Größe einstellen');
+    if (on) { more.classList.remove('open'); toast('Stick und Knöpfe ziehen, Größe einstellen'); } else store.set('layout2', layout);
   };
   const dragMove = (el, key) => {
     let start = null;
@@ -126,7 +170,7 @@
     }, true);
     el.addEventListener('pointerup', () => { start = null; }, true);
   };
-  dragMove(stick, 'stick'); dragMove(btns, 'btns');
+  dragMove(stick, 'stick'); dragMove(pad, 'pad');
   $('#tc-edit').addEventListener('pointerdown', (e) => { e.preventDefault(); setEdit(!editing); });
   $('#tc-done').addEventListener('pointerdown', (e) => { e.preventDefault(); setEdit(false); });
   $('#tc-reset').addEventListener('pointerdown', (e) => { e.preventDefault(); layout = { ...DEFAULT }; $('#tc-size').value = 1; place(); });
@@ -138,37 +182,37 @@
     el.addEventListener('pointerdown', (e) => {
       if (editing) return;
       e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('on'); buzz(); hold(code, el, true);
+      if (el.closest('.wpn')) { clearTimeout(wpnT); wpnT = setTimeout(() => wpn.classList.remove('open'), 4000); }
+      if (el.closest('.more')) setTimeout(() => more.classList.remove('open'), 150);
     });
     el.addEventListener('pointerup', up);
     el.addEventListener('pointercancel', up);
   });
 
-  // ---- Stick ----
-  // Zu Fuß (normale Kamera): Figur läuft in die Richtung, in die der Stick zeigt.
-  // Im Auto oder mit 3D-Kamera: oben = Gas, unten = Bremse/rückwärts, links/rechts = lenken.
+  // ---- Stick: Richtungs-Steuerung zu Fuß UND im Auto ----
+  // heading h -> Blickrichtung (sin h, cos h), Bildschirm-y nach unten; A dreht +h, D dreht -h.
   const dirs = { up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'] };
   const setDir = (name, on, src = 'stick') => dirs[name].forEach((c) => hold(c, src, on));
-  let sid = null, vec = null; // vec: {x,y} in -1..1, Bildschirm-y nach unten
-  const cam3d = false;
-  const menuOpen = () => !(window.GTA2_state && window.GTA2_state() && window.GTA2_state().hasPlayer);
+  let sid = null, vec = null;
   const steer = () => {
     if (!vec) { Object.keys(dirs).forEach((n) => setDir(n, false)); return; }
-    const mag = Math.hypot(vec.x, vec.y), t = 0.32;
-    const st = window.GTA2_state && window.GTA2_state();
-    const absolute = st && st.hasPlayer && !st.inCar && !cam3d;
-    if (!absolute) {
+    const mag = Math.hypot(vec.x, vec.y), t = 0.3;
+    const st = state();
+    if (!st || !st.hasPlayer) { // Menüs: Pfeiltasten
       setDir('up', vec.y < -t); setDir('down', vec.y > t); setDir('left', vec.x < -t); setDir('right', vec.x > t);
       return;
     }
-    // Richtungs-Steuerung: heading h -> Blickrichtung (sin h, cos h); A dreht +h, D dreht -h
-    setDir('down', false);
-    if (mag < t) { setDir('up', false); setDir('left', false); setDir('right', false); return; }
-    const want = Math.atan2(vec.x, vec.y);
-    let diff = want - st.heading;
+    if (mag < t) { Object.keys(dirs).forEach((n) => setDir(n, false)); return; }
+    let diff = Math.atan2(vec.x, vec.y) - st.heading;
     diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-    const tol = 0.2;
+    const tol = st.inCar ? 0.12 : 0.2;
     setDir('left', diff > tol); setDir('right', diff < -tol);
-    setDir('up', Math.abs(diff) < 1.3);
+    if (st.inCar) {
+      // Auto: Gas geben und dabei Richtung Stick lenken; bei fast entgegengesetzter Richtung trotzdem Gas (wendet im Bogen)
+      setDir('up', true); setDir('down', false);
+    } else {
+      setDir('down', false); setDir('up', Math.abs(diff) < 1.3);
+    }
   };
   setInterval(steer, 30);
   const move = (e) => {
@@ -179,20 +223,20 @@
     knob.style.transform = `translate(calc(-50% + ${x}px),calc(-50% + ${y}px))`;
     vec = { x: x / max, y: y / max }; steer();
   };
-  const end = () => { sid = null; vec = null; knob.style.transform = ''; steer(); };
-  stick.addEventListener('pointerdown', (e) => { if (editing) return; e.preventDefault(); sid = e.pointerId; stick.setPointerCapture(sid); move(e); });
+  const end = () => { sid = null; vec = null; knob.style.transform = ''; stick.classList.remove('act'); steer(); };
+  stick.addEventListener('pointerdown', (e) => { if (editing) return; e.preventDefault(); sid = e.pointerId; stick.setPointerCapture(sid); stick.classList.add('act'); move(e); });
   stick.addEventListener('pointermove', (e) => { if (e.pointerId === sid && !editing) move(e); });
   stick.addEventListener('pointerup', end);
   stick.addEventListener('pointercancel', end);
 
-  // ---- Lenken durch Neigen (nur im Auto) ----
+  // ---- Lenken durch Neigen (nur im Auto, wenn Stick nicht benutzt wird) ----
   let tiltOn = false;
   const onTilt = (e) => {
     if (!tiltOn || e.beta == null) return;
-    if (!inCar) { setDir('left', false, 'tilt'); setDir('right', false, 'tilt'); return; }
+    if (ctx !== 'car' || vec) { setDir('left', false, 'tilt'); setDir('right', false, 'tilt'); setDir('up', false, 'tilt'); return; }
     const angle = (screen.orientation && screen.orientation.angle) ?? window.orientation ?? 0;
     const v = angle === 90 ? e.beta : (angle === -90 || angle === 270) ? -e.beta : e.gamma;
-    setDir('left', v < -12, 'tilt'); setDir('right', v > 12, 'tilt');
+    setDir('left', v < -12, 'tilt'); setDir('right', v > 12, 'tilt'); setDir('up', true, 'tilt');
   };
   $('#tc-tilt').addEventListener('pointerdown', async (e) => {
     e.preventDefault();
@@ -202,8 +246,8 @@
     }
     tiltOn = !tiltOn;
     $('#tc-tilt').classList.toggle('on', tiltOn);
-    if (tiltOn) { window.addEventListener('deviceorientation', onTilt); toast('Im Auto: Gerät neigen zum Lenken'); }
-    else { window.removeEventListener('deviceorientation', onTilt); setDir('left', false, 'tilt'); setDir('right', false, 'tilt'); }
+    if (tiltOn) { window.addEventListener('deviceorientation', onTilt); toast('Im Auto: neigen = lenken, fährt automatisch'); }
+    else { window.removeEventListener('deviceorientation', onTilt); ['left', 'right', 'up'].forEach((n) => setDir(n, false, 'tilt')); }
   });
 
   // ---- Ausblenden ----
@@ -211,7 +255,7 @@
   tog.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     root.classList.toggle('hide');
-    tog.textContent = root.classList.contains('hide') ? '🎮 an' : '⌨︎ aus';
+    tog.textContent = root.classList.contains('hide') ? '🎮 einblenden' : '⌨︎ ausblenden';
   });
 
   // ---- Nur im Spiel zeigen ----
