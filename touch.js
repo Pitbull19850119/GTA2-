@@ -25,16 +25,16 @@
   #tc .stick{position:absolute;left:calc(24px + env(safe-area-inset-left));bottom:calc(24px + env(safe-area-inset-bottom));
       width:170px;height:170px;border-radius:50%;background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.28)}
   #tc .knob{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;
-      background:rgba(245,197,24,.55);border:2px solid rgba(255,255,255,.6);pointer-events:none}
+      background:rgba(255,122,0,.6);border:2px solid rgba(255,255,255,.6);pointer-events:none}
   #tc .btns{position:absolute;right:calc(20px + env(safe-area-inset-right));bottom:calc(20px + env(safe-area-inset-bottom));
       display:grid;grid-template-columns:repeat(3,74px);gap:12px}
   #tc .b{width:74px;height:74px;border-radius:50%;background:rgba(0,0,0,.42);border:2px solid rgba(255,255,255,.45);
       color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.05}
-  #tc .b.on{background:rgba(245,197,24,.7);color:#111}
+  #tc .b.on{background:rgba(255,122,0,.8);color:#111}
   #tc .b.big{background:rgba(200,40,40,.55)}
   #tc .top{position:absolute;top:calc(10px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right));display:flex;gap:8px}
   #tc .s{padding:9px 13px;border-radius:10px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.4);color:#fff}
-  #tc .s.on{background:rgba(245,197,24,.7);color:#111}
+  #tc .s.on{background:rgba(255,122,0,.8);color:#111}
   #tc.hide .stick,#tc.hide .btns{display:none}`;
   document.head.appendChild(css);
 

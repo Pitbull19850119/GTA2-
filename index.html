@@ -7,7 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GTA2">
-  <title data-i18n="ui.docTitle">GTA2 in your browser</title>
+  <title>GTA2 Pocket</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
@@ -262,70 +262,67 @@
   </style>
 <link href="https://fonts.googleapis.com/css2?family=Bungee+Shade&family=Archivo+Narrow:wght@500;700&display=swap" rel="stylesheet">
   <style id="g2skin">
-  :root{--y:#ffc400;--r:#e3101b;--k:#09090a;--p:#16161a;--g:#9dff4a}
-  body.landing-on{background:
-     radial-gradient(circle at 20% -10%,rgba(255,196,0,.18),transparent 45%),
-     radial-gradient(circle at 110% 30%,rgba(227,16,27,.16),transparent 40%),
-     radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.2px) 0 0/6px 6px,var(--k);
-     font-family:"Archivo Narrow",system-ui,sans-serif;font-size:16px}
+  :root{--o:#ff7a00;--y:#ffd23f;--r:#ff2e4d;--c:#2ef2ff;--g:#b6ff3b;--k:#07070c}
+  body.landing-on{font-family:"Archivo Narrow",system-ui,sans-serif;font-size:16px;color:#e6e3dc;background:
+    linear-gradient(rgba(255,122,0,.07) 1px,transparent 1px) 0 0/48px 48px,
+    linear-gradient(90deg,rgba(255,122,0,.07) 1px,transparent 1px) 0 0/48px 48px,
+    radial-gradient(ellipse at 50% -20%,#2a1240 0,transparent 60%),var(--k)}
+  body.landing-on::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px)}
   #crews,#options,#topnav a[href="#options"],#help details:not(:has(summary[data-i18n="ui.help.q2"],summary[data-i18n="ui.help.q4"],summary[data-i18n="ui.help.q6"])){display:none!important}
-  #topnav{background:rgba(9,9,10,.82)!important;backdrop-filter:blur(10px);border:0!important;border-bottom:3px solid var(--y)!important;border-radius:0!important}
-  #topnav .logo{font-family:Bungee,sans-serif!important;color:#fff!important;letter-spacing:.02em}
-  #topnav .logo::after{content:"2";display:none}
-  #topnav nav a{font-family:Bungee,sans-serif;font-size:13px;letter-spacing:.06em;color:#ddd!important}
-  #topnav nav a:hover{color:var(--y)!important}
-  .landing-on .card{background:linear-gradient(180deg,#1b1b20,#121215)!important;border:1px solid #2a2a30!important;border-radius:4px!important;
-     box-shadow:6px 6px 0 #000;position:relative}
-  .landing-on .btn{font-family:Bungee,sans-serif!important;letter-spacing:.04em;border-radius:3px!important;border:0!important;
-     background:var(--y)!important;color:#111!important;box-shadow:4px 4px 0 #000!important;transform:skew(-6deg);padding:.75rem 1.4rem!important}
-  .landing-on .btn:hover{background:#fff!important}
-  .landing-on .btn:active{transform:skew(-6deg) translate(3px,3px);box-shadow:1px 1px 0 #000!important}
-  .landing-on .btn.alt{background:var(--r)!important;color:#fff!important}
-  .landing-on .btn.ghost{background:transparent!important;color:var(--y)!important;outline:2px solid var(--y);box-shadow:none!important}
-  .hero{grid-template-columns:1fr!important}
-  .hero-shot{display:none!important}
-  .hero-side{overflow:hidden;padding:2.6rem 2rem 2rem!important;gap:1rem!important;
-     background:repeating-linear-gradient(-45deg,transparent 0 22px,rgba(255,196,0,.035) 22px 44px),linear-gradient(135deg,#1d1c22,#0f0f12)!important}
-  .hero-side::before{content:"";position:absolute;left:0;right:0;top:0;height:10px;
-     background:repeating-linear-gradient(-45deg,var(--y) 0 14px,#111 14px 28px)}
-  .kicker{font-family:Bungee,sans-serif;font-size:12px;letter-spacing:.2em;color:var(--g);text-shadow:0 0 8px rgba(157,255,74,.5)}
-  .g2title{margin:0!important;font:clamp(64px,13vw,150px)/.85 "Bungee Shade",Bungee,sans-serif!important;color:#fff!important;
-     text-shadow:none!important;display:flex;align-items:flex-end;gap:.08em;flex-wrap:wrap}
-  .g2title b{color:var(--r);font-weight:400;transform:rotate(-6deg);display:inline-block}
-  .g2title small{font:clamp(16px,3vw,26px)/1 Bungee,sans-serif;color:var(--y);margin:0 0 .5em .3em;
-     background:#000;padding:.35em .6em;transform:rotate(-3deg)}
-  .hero-side .lead{font-size:clamp(17px,2.2vw,21px);color:#e9e6df!important;max-width:40ch}
+  #topnav{background:rgba(7,7,12,.85)!important;backdrop-filter:blur(8px);border:0!important;border-radius:0!important;
+    box-shadow:0 1px 0 var(--o),0 0 24px rgba(255,122,0,.25)}
+  #topnav .logo{font-family:Bungee,sans-serif!important;color:var(--o)!important;text-shadow:0 0 12px rgba(255,122,0,.6)}
+  #topnav .logo small{color:var(--c)!important;font-family:ui-monospace,Menlo,monospace;letter-spacing:.15em;text-transform:uppercase}
+  #topnav nav a{font-family:ui-monospace,Menlo,monospace;text-transform:uppercase;font-size:12px;letter-spacing:.15em;color:#cfcbd8!important}
+  #topnav nav a:hover{color:var(--c)!important}
+  .landing-on .card{background:rgba(16,14,24,.88)!important;border:1px solid rgba(255,122,0,.35)!important;border-radius:0!important;
+    box-shadow:none!important;clip-path:polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,22px 100%,0 calc(100% - 22px));position:relative}
+  .landing-on .btn{font-family:Bungee,sans-serif!important;letter-spacing:.05em;border-radius:0!important;border:0!important;transform:none;
+    background:var(--o)!important;color:#120800!important;box-shadow:0 0 18px rgba(255,122,0,.45)!important;padding:.8rem 1.5rem!important;
+    clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%)}
+  .landing-on .btn:hover{background:var(--y)!important}
+  .landing-on .btn.alt{background:var(--r)!important;color:#fff!important;box-shadow:0 0 18px rgba(255,46,77,.45)!important}
+  .landing-on .btn.ghost{background:rgba(46,242,255,.08)!important;color:var(--c)!important;box-shadow:inset 0 0 0 2px var(--c)!important}
+  .hero{grid-template-columns:1fr!important}.hero-shot{display:none!important}
+  .hero-side{padding:2.4rem 2rem 2rem!important;gap:.9rem!important}
+  .kicker{font:13px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:var(--g);text-shadow:0 0 8px rgba(182,255,59,.6)}
+  .g2title{margin:0!important;font:clamp(72px,15vw,170px)/.8 Bungee,sans-serif!important;color:transparent!important;
+    -webkit-text-stroke:2px var(--o);text-shadow:0 0 30px rgba(255,122,0,.35)!important;letter-spacing:.02em}
+  .g2title b{color:var(--r);-webkit-text-stroke:0;font-weight:400;text-shadow:0 0 28px rgba(255,46,77,.7)}
+  .sub{font:clamp(18px,3vw,28px)/1 Bungee,sans-serif;color:var(--c);letter-spacing:.3em;text-transform:uppercase;text-shadow:0 0 14px rgba(46,242,255,.6)}
+  .hero-side .lead{font-size:clamp(17px,2.2vw,21px);color:#e6e3dc!important;max-width:42ch}
   .cta{display:flex;gap:1rem;flex-wrap:wrap}
-  .hero-side .hint{font-size:13px;color:#8d8a83!important;max-width:60ch}
-  #files-state{font-family:ui-monospace,Menlo,monospace;color:var(--g)!important;font-size:13px}
-  #files-bar{accent-color:var(--y)}
-  .modes{gap:1.25rem!important}
-  .mode h2,.section-title{font-family:Bungee,sans-serif!important;color:var(--y)!important;letter-spacing:.02em;font-weight:400!important}
-  .mode:nth-child(2) h2{color:var(--r)!important}
-  .mode:nth-child(3) h2{color:var(--g)!important}
-  .pill{font-family:Bungee,sans-serif;font-size:11px!important;letter-spacing:.06em;background:#000!important;color:#ddd!important;border-radius:2px!important}
-  .seg button[aria-selected="true"]{background:var(--y)!important;color:#111!important}
-  .seg button{font-family:Bungee,sans-serif;font-size:12px;letter-spacing:.05em}
-  .faq summary{font-family:Bungee,sans-serif;font-size:14px;color:#fff}
-  .landing-foot{font-size:12px}
-  .touchdemo{position:relative;height:250px;margin:1rem 0;border-radius:18px;border:3px solid #333;
-     background:linear-gradient(135deg,#2a2b2f,#141417);overflow:hidden;max-width:620px}
+  .steps{margin:.4rem 0 0;padding:0;list-style:none;counter-reset:s;display:grid;gap:.55rem;max-width:68ch}
+  .steps li{counter-increment:s;position:relative;padding:.6rem .8rem .6rem 2.8rem;background:rgba(255,255,255,.03);border-left:2px solid var(--o);font-size:14.5px;color:#cfcbd8}
+  .steps li::before{content:counter(s);position:absolute;left:.75rem;top:.5rem;font:18px Bungee,sans-serif;color:var(--o)}
+  .steps b{color:#fff}.steps a{color:var(--c)}
+  #files-state{font:13px ui-monospace,Menlo,monospace;color:var(--g)!important}
+  #files-bar{accent-color:var(--o)}
+  .mode h2,.section-title{font-family:Bungee,sans-serif!important;font-weight:400!important;color:var(--o)!important}
+  .mode:nth-child(2) h2{color:var(--r)!important}.mode:nth-child(3) h2{color:var(--c)!important}
+  .pill{font:11px ui-monospace,Menlo,monospace!important;text-transform:uppercase;letter-spacing:.1em;background:transparent!important;
+    border:1px solid #4a3a5a!important;color:#cfcbd8!important;border-radius:0!important}
+  .seg{border-radius:0!important;flex-wrap:wrap;max-width:100%}.seg button{font:12px ui-monospace,Menlo,monospace;text-transform:uppercase;letter-spacing:.1em;border-radius:0!important}
+  .seg button[aria-selected="true"]{background:var(--o)!important;color:#120800!important}
+  .faq summary{font:14px Bungee,sans-serif;color:#fff}
+  .faq details{border-radius:0!important}
+  .touchdemo{position:relative;height:250px;margin:1rem 0;border-radius:18px;border:2px solid #3a3050;background:linear-gradient(135deg,#1c1828,#0d0b14);overflow:hidden;max-width:620px}
   .touchdemo span,.td-stick{font:600 12px system-ui,sans-serif;color:#fff}
   .td-top{position:absolute;top:10px;right:10px;display:flex;gap:6px}
   .td-top span{padding:5px 9px;border-radius:7px;background:rgba(0,0,0,.55);border:1px solid #555}
   .td-stick{position:absolute;left:20px;bottom:20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid #555}
-  .td-stick i{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(255,196,0,.6)}
+  .td-stick i{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(255,122,0,.65)}
   .td-stick em{position:absolute;left:130px;bottom:10px;width:140px;font-style:normal;color:#aaa}
   .td-btns{position:absolute;right:16px;bottom:16px;display:grid;grid-template-columns:repeat(3,58px);gap:8px}
-  .td-btns span{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;
-     line-height:1.05;font-size:10.5px;background:rgba(0,0,0,.45);border:2px solid #666}
-  .td-btns .red{background:rgba(227,16,27,.6)}
-  @media (max-width:640px){.hero-side{padding:2rem 1rem 1.5rem!important}.td-stick em{display:none}.touchdemo{height:230px}.td-stick{width:90px;height:90px;left:12px}.td-stick i{left:22px;top:22px;width:42px;height:42px}.td-btns{grid-template-columns:repeat(3,46px);gap:6px;right:10px}.td-btns span{width:46px;height:46px;font-size:9px}.td-top span{padding:4px 6px;font-size:10px}}
+  .td-btns span{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.05;font-size:10.5px;background:rgba(0,0,0,.45);border:2px solid #666}
+  .td-btns .red{background:rgba(255,46,77,.6)}
+  @media (max-width:640px){.hero-side{padding:2rem 1rem 1.5rem!important}.td-stick em{display:none}.td-stick{width:90px;height:90px;left:12px}.td-stick i{left:22px;top:22px;width:42px;height:42px}.td-btns{grid-template-columns:repeat(3,46px);gap:6px;right:10px}.td-btns span{width:46px;height:46px;font-size:9px}.td-top span{padding:4px 6px;font-size:10px}}
   </style>
 </head>
 <body class="booting">
   <header id="topnav" hidden>
-    <a class="logo" href="#top">GTA2<small data-i18n="ui.logo.tagline">in your browser</small></a>
+    <a class="logo" href="#top">GTA2<small>Pocket</small></a>
     <nav data-i18n-aria="ui.nav.sections" aria-label="Sections">
       <a href="#play">Modi</a><a href="#crews" hidden>Crews</a><a href="#options" hidden>Optionen</a><a href="#controls">Steuerung</a><a href="#help">Hilfe</a>
     </nav>
@@ -341,14 +338,19 @@
           <span class="tag" data-i18n="ui.hero.tag">Respect is everything</span>
         </div>
         <div class="card hero-side">
-          <div class="kicker">Rockstar Freeware · 1999</div>
-          <h1 class="g2title">GTA<b>2</b><small>im Browser</small></h1>
-          <p class="lead">Das Original. Breitbild, Karte, Koop. Keine Installation – auf PC, Mac, Tablet und Handy.</p>
+          <div class="kicker">&gt; SYSTEM BEREIT_ · FREEWARE · 1999</div>
+          <h1 class="g2title">GTA<b>2</b></h1>
+          <div class="sub">Pocket&nbsp;Edition</div>
+          <p class="lead">Das Original auf PC, Mac, Tablet und Handy. Mit Touch-Steuerung, Breitbild und Koop.</p>
           <progress id="files-bar" max="1" value="0"></progress>
           <span id="files-state" data-i18n="ui.files.preparing">Getting GTA2 ready…</span>
           <div class="cta"><button class="btn" type="button" data-play>Spielen</button>
           <button class="btn ghost" type="button" id="pick-local">GTA2.exe wählen</button></div>
-          <p class="hint">Download blockiert? Offizielle Freeware-Datei (GTA2.exe, 362&nbsp;MB) aufs Gerät laden und hier wählen – einmalig.</p>
+          <ol class="steps">
+            <li><b>Automatisch:</b> „Spielen“ lädt die Spieldaten einmalig vom Internet Archive. Das kann je nach Server 10&nbsp;–&nbsp;70&nbsp;Minuten dauern. Seite offen und Display an lassen.</li>
+            <li><b>Schneller:</b> Datei <a href="https://archive.org/download/gta2_rockstar-classics/GTA2INSTALLER.exe" target="_blank" rel="noopener">GTA2INSTALLER.exe herunterladen</a> (362&nbsp;MB, offizielle Rockstar-Freeware), z.&nbsp;B. am PC, dann per AirDrop/iCloud aufs Gerät und hier auf „GTA2.exe wählen“ tippen. Entpacken dauert ca. 1 Minute.</li>
+            <li>Danach bleibt alles im Browser gespeichert – beim nächsten Mal sofort spielen.</li>
+          </ol>
           <div id="continue-root" hidden></div>
         </div>
       </section>
