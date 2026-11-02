@@ -1205,9 +1205,10 @@ export class Gta2Map {
    * and mission arrows - sit on its rim, pointing their way.
    */
   drawMinimap(s, vp) {
-    const r = Math.round(Math.min(105, Math.max(56, vp.h * 0.15))); // inner radius
+    const r = Math.round(document.body.classList.contains('tc-on') ? Math.min(78, Math.max(48, vp.h * 0.11)) : Math.min(105, Math.max(56, vp.h * 0.15))); // inner radius
     const border = Math.max(5, Math.round(r * 0.11));
-    const cx = vp.x + vp.w - r - border - 14, cy = vp.y + vp.h - r - border - 14;
+    const touchUi = document.body.classList.contains('tc-on'); // Touch: unten Mitte, zwischen Stick und Knöpfen
+    const cx = touchUi ? vp.x + vp.w / 2 : vp.x + vp.w - r - border - 14, cy = vp.y + vp.h - r - border - 14;
     // the radar canvas covers the circle and the markers on its rim; drawing uses page coordinates
     const extent = Math.ceil(r + border * 4 + 12);
     const left = Math.round(cx - extent), top = Math.round(cy - extent), size = extent * 2;

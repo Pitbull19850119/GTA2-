@@ -184,7 +184,7 @@
 
   // ---------- Modi ----------
   let mode = null; // {kind, ...}
-  const stopMode = (msg) => { if (mode && mode.kind === 'job' && mode.job === 'swat') for (let g = 0; g < 10; g++) call('gta2_dev_set_respect', [g, 0]); mode = null; hud.classList.remove('show'); if (msg) shout(msg); };
+  const stopMode = (msg) => { try { if (mode && mode.t && window.GTA2_map) window.GTA2_map.waypoint = null; } catch {} if (mode && mode.kind === 'job' && mode.job === 'swat') for (let g = 0; g < 10; g++) call('gta2_dev_set_respect', [g, 0]); mode = null; hud.classList.remove('show'); if (msg) shout(msg); };
   const startFrenzy = () => {
     const r = rules(); if (!r) return;
     [1, 2, 6, 5, 8].forEach((k) => call('gta2_dev_give_weapon', [k, 99]));
@@ -353,7 +353,7 @@
     // Auto-Teleport
     const wp = window.GTA2_map && window.GTA2_map.waypoint;
     const wpKey = wp ? wp.x + ',' + wp.y : null;
-    if (T.autoTp && wpKey && wpKey !== lastWp && d && !d.inCar && !(window.GTA2_map.open)) { teleport(); }
+    if (T.autoTp && !mode && wpKey && wpKey !== lastWp && d && !d.inCar && !(window.GTA2_map.open)) { teleport(); }
     lastWp = wpKey;
 
     // Tageschallenge
@@ -369,6 +369,12 @@
 
     // Modi
     if (!mode) { hud.classList.remove('show'); return; }
+    // Ziel des Modus auf Minikarte und Karte als Wegpunkt zeigen
+    const tgt = mode.t;
+    if (tgt && window.GTA2_map) {
+      const wpNow = window.GTA2_map.waypoint;
+      if (!wpNow || Math.abs(wpNow.x - tgt.x) > 0.5 || Math.abs(wpNow.y - tgt.y) > 0.5) { window.GTA2_map.waypoint = { x: tgt.x, y: tgt.y }; lastWp = tgt.x + ',' + tgt.y; }
+    }
     if (mode.kind === 'job') { jobTick(s, d, r); return; }
     if (mode.kind === 'frenzy') {
       const left = Math.max(0, Math.ceil((mode.end - Date.now()) / 1000)), pts = r.cash - mode.base;
