@@ -1289,6 +1289,7 @@ async function start(getFiles, { cacheAfterStart = false, coop = null, loadSlot 
       name: (slot) => (coop.players[slot] ? coop.players[slot].name : t('shell.playerN', { n: slot + 1 })),
       colour: (slot) => PLAYER_COLOURS[slot % PLAYER_COLOURS.length],
     }) : null;
+    if (coop) window.GTA2_coop = { chat, lobby: coop.lobby, mySlot: coop.mySlot, view: map.coop, host: !!coop.lobby.host };
     // Quick save and load (single player): a snapshot of the whole game.
     // Save states (single player): the Saves screen, the autosave after a job, Continue on the front page.
     const states = coop ? null : new SaveStates({ Module, renderer, map });
