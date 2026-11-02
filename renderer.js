@@ -71,6 +71,40 @@ void main() {
   outColour = vec4(rgb, a);
 }`;
 
+const POST_VS = `#version 300 es
+out vec2 vUv;
+void main() {
+  vec2 p = vec2(gl_VertexID == 1 ? 3.0 : -1.0, gl_VertexID == 2 ? 3.0 : -1.0);
+  vUv = p * 0.5 + 0.5;
+  gl_Position = vec4(p, 0.0, 1.0);
+}`;
+
+// GTA2 Pocket: moderne Nachbearbeitung (Leuchten, Farben, Schärfe, Vignette, Tonemapping)
+const POST_FS = `#version 300 es
+precision mediump float;
+in vec2 vUv;
+uniform sampler2D uScene;
+uniform vec2 uPx;
+uniform float uLevel; // 1 = Modern, 2 = Ultra
+out vec4 outColour;
+vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
+void main() {
+  vec3 c = texture(uScene, vUv).rgb;
+  vec3 n = texture(uScene, vUv + vec2(uPx.x, 0.0)).rgb + texture(uScene, vUv - vec2(uPx.x, 0.0)).rgb
+         + texture(uScene, vUv + vec2(0.0, uPx.y)).rgb + texture(uScene, vUv - vec2(0.0, uPx.y)).rgb;
+  c += (c - n * 0.25) * (0.18 * uLevel);                                   // Schärfe
+  vec3 b = textureLod(uScene, vUv, 3.0).rgb * 0.45 + textureLod(uScene, vUv, 4.0).rgb * 0.35 + textureLod(uScene, vUv, 5.5).rgb * 0.3;
+  b = max(b - 0.55, 0.0);
+  c += b * (0.45 + 0.35 * uLevel);                                            // Leuchten (Bloom)
+  float l = dot(c, vec3(0.299, 0.587, 0.114));
+  c = mix(vec3(l), c, 1.1 + 0.06 * uLevel);                                // Sättigung
+  c *= mix(vec3(0.97, 1.0, 1.05), vec3(1.04, 1.0, 0.95), smoothstep(0.15, 0.75, l)); // kühle Schatten, warme Lichter
+  c = mix(c, aces(c * 1.15), 0.5 + 0.15 * uLevel);                                      // Tonemapping
+  float v = smoothstep(1.05, 0.3, length((vUv - 0.5) * vec2(1.15, 1.0)));
+  c *= mix(1.0, v, 0.22 + 0.08 * uLevel);                                    // Vignette
+  outColour = vec4(c, 1.0);
+}`;
+
 function compile(gl, type, source) {
   const shader = gl.createShader(type);
   gl.shaderSource(shader, source);
@@ -120,6 +154,25 @@ export class Gta2Renderer {
 
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.CULL_FACE);
+    // Nachbearbeitung
+    this.post = 0;
+    try { this.post = +(localStorage.getItem('gta2-gfx') || 1); } catch { this.post = 1; }
+    try {
+      const pp = gl.createProgram();
+      gl.attachShader(pp, compile(gl, gl.VERTEX_SHADER, POST_VS));
+      gl.attachShader(pp, compile(gl, gl.FRAGMENT_SHADER, POST_FS));
+      gl.linkProgram(pp);
+      if (!gl.getProgramParameter(pp, gl.LINK_STATUS)) throw new Error('post link');
+      this.postProgram = pp;
+      this.uPx = gl.getUniformLocation(pp, 'uPx');
+      this.uLevel = gl.getUniformLocation(pp, 'uLevel');
+      this.postVao = gl.createVertexArray();
+      this.fbo = gl.createFramebuffer();
+      this.fboTex = gl.createTexture();
+      this.fboW = 0; this.fboH = 0;
+    } catch { this.postProgram = null; }
+    window.GTA2_setGraphics = (lvl) => { this.post = lvl; try { localStorage.setItem('gta2-gfx', String(lvl)); } catch {} };
+    window.GTA2_graphics = () => this.post;
     this.resize();
   }
 
@@ -197,6 +250,24 @@ export class Gta2Renderer {
     this.resize(refW);
     this.refW = refW;
     const vp = this.viewport;
+    const usePost = this.post > 0 && this.postProgram;
+    if (usePost) {
+      const W = this.canvas.width, H = this.canvas.height;
+      if (W !== this.fboW || H !== this.fboH) {
+        gl.bindTexture(gl.TEXTURE_2D, this.fboTex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.fboTex, 0);
+        this.fboW = W; this.fboH = H;
+      }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+    } else {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
     // The bars outside the view keep whatever the last wider frame left there.
     gl.disable(gl.SCISSOR_TEST);
     gl.clearColor(0, 0, 0, 1);
@@ -239,6 +310,21 @@ export class Gta2Renderer {
       this.setBlend(cmds.getUint32(o + 8, true));
       gl.drawArrays(gl.TRIANGLES, cmds.getUint32(o + 12, true), cmds.getUint32(o + 16, true));
       drawCalls++;
+    }
+    if (usePost) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.disable(gl.SCISSOR_TEST);
+      gl.disable(gl.BLEND);
+      this.blend = -1;
+      gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+      gl.bindTexture(gl.TEXTURE_2D, this.fboTex);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.useProgram(this.postProgram);
+      gl.uniform2f(this.uPx, 1 / this.canvas.width, 1 / this.canvas.height);
+      gl.uniform1f(this.uLevel, this.post);
+      gl.bindVertexArray(this.postVao);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.useProgram(this.program);
     }
     this.stats.frames++;
     this.stats.drawCalls = drawCalls;

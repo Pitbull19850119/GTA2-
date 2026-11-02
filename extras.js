@@ -269,6 +269,12 @@
         <p><b>Spielmodi:</b> Amoklauf (2 Min Punkte sammeln), Überleben (Uhr läuft, solange du gesucht wirst), Taxi, Stunt-Jagd. Rekorde und Erfolge werden gespeichert.</p>
         <p><b>Koop:</b> Startseite → Koop → „Raum öffnen“. Unter „Mitspieler suchen“ siehst du offene Räume anderer. Im Spiel: 💬 Chat, 🏆 Tabelle, 🎮 Modi (Wettrennen, Fangen – nur Host).</p>
       </details>
+      <h3>🎨 Grafik</h3>
+      <div class="row">${[['0', 'Original'], ['1', 'Modern'], ['2', 'Ultra']].map(([v, n]) => `<button class="b ${String(window.GTA2_graphics ? window.GTA2_graphics() : 1) === v ? 'on' : ''}" data-gfx="${v}">${n}</button>`).join('')}</div>
+      <div class="note">Modern/Ultra: Leuchteffekte, kräftigere Farben, Schärfe, Vignette. Ultra braucht mehr Leistung.</div>
+      <h3>📲 Spielstände übertragen (PC ↔ Handy)</h3>
+      <div class="row"><button class="b" data-a="export">⬇️ Exportieren (Datei)</button><button class="b" data-a="import">⬆️ Importieren</button></div>
+      <div class="note">Am einen Gerät exportieren, die Datei per AirDrop, iCloud, Mail oder USB aufs andere Gerät bringen und dort importieren. Danach auf der Startseite „Weiterspielen“.</div>
       <h3>Erfolge (${Object.keys(ach).length}/${Object.keys(ACH).length})</h3>
       <div class="ach">${Object.entries(ACH).map(([k, v]) => `<div class="${ach[k] ? 'got' : ''}">${v}</div>`).join('')}</div>
       <div class="note">Gefahren: ${stats.km.toFixed(1)} km · Gespielt: ${Math.floor(stats.played / 60)} Min${r ? ' · Bargeld: ' + money(r.cash) : ''}</div>
@@ -279,7 +285,7 @@
   btn.addEventListener('click', open);
   pop.addEventListener('click', (e) => {
     if (e.target === pop) return close();
-    const el = e.target.closest('[data-a],[data-car],[data-m],[data-t],[data-j]'); if (!el) return;
+    const el = e.target.closest('[data-a],[data-car],[data-m],[data-t],[data-j],[data-gfx]'); if (!el) return;
     const a = el.dataset.a, d = dev();
     if (a === 'close') return close();
     if (a === 'weapons') { [0, 1, 2, 3, 4, 5, 6, 8, 10].forEach((k) => call('gta2_dev_give_weapon', [k, 99])); shout('🔫 Waffen-Paket!'); close(); }
@@ -292,6 +298,9 @@
     else if (a === 'love' || a === 'hate' || a === 'neutral') { const v = a === 'love' ? 100 : a === 'hate' ? -100 : 0; for (let g = 0; g < GANGS; g++) call('gta2_dev_set_respect', [g, v]); shout(a === 'love' ? '😇 Alle lieben dich' : a === 'hate' ? '😈 Alle hassen dich' : '😐 Neutral'); }
     else if (a === 'dstart') { if (daily.id === 'earn') { const r = rules(); dailyState.started = Date.now(); dailyState.base = r ? r.cash : 0; saveDaily(); shout('📅 Los! 3 Minuten'); close(); } }
     else if (el.dataset.j) { stopMode(); startJob(el.dataset.j); close(); }
+    else if (el.dataset.gfx) { if (window.GTA2_setGraphics) window.GTA2_setGraphics(+el.dataset.gfx); render(); }
+    else if (a === 'export') { const b = document.getElementById('export-saves'); if (b) { b.click(); shout('⬇️ Export gestartet'); } }
+    else if (a === 'import') { const i = document.getElementById('import-saves'); if (i) i.click(); }
     else if (a === 'radar') { const m = window.GTA2_map; if (m) m.setMinimap(!m.minimapOn); render(); }
     else if (a === 'voice') { voice = !voice; ls.set('voice', voice); render(); }
     else if (el.dataset.m) {
