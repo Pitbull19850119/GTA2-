@@ -166,9 +166,29 @@
     if ((job === 'cop' || job === 'swat') && mode.onFoot) radio(`Zentrale: Verdächtiger flüchtet zu Fuß ${pick(STREETS)}! Hinterher und festnehmen!`);
     else say(job, 'call');
   };
-  const startJob = (job) => {
+  // Fahrzeug sicher neben dir erscheinen lassen: mehrere Stellen probieren und prüfen, ob es wirklich da ist
+  const spawnNear = async (model) => {
+    const d0 = dev(); if (!d0 || !d0.player) { shout('Erst ins Spiel'); return false; }
+    if (d0.inCar) { key('Enter', true); setTimeout(() => key('Enter', false), 120); await new Promise((r) => setTimeout(r, 1600)); }
+    const s0 = st(); const h = s0 ? s0.heading : 0;
+    const fx = Math.sin(h), fy = Math.cos(h); // Blickrichtung
+    // direkt an deiner Position: dort ist sicher Platz (du stehst ja dort) – danach einfach einsteigen
+    const offs = [[0, 0]];
+    const near = () => { const w = window.GTA2_world && window.GTA2_world(); const p = st(); if (!w || !p) return new Set(); return new Set(w.cars.filter((c) => Math.hypot(c.x - p.x, c.y - p.y) < 5).map((c) => c.id)); };
+    const before = near();
+    for (const [ox, oy] of offs) {
+      const rot = Math.round(((Math.atan2(-fx, fy) * 180 / Math.PI) + 360) % 360 * 4);
+      if (!call('gta2_dev_spawn_car', [model, 0, 0, rot])) continue;
+      await new Promise((r) => setTimeout(r, 250));
+      const after = near();
+      if ([...after].some((id) => !before.has(id))) return true;
+    }
+    return false;
+  };
+
+  const startJob = async (job) => {
     const s = st(), d = dev(); if (!s) return;
-    if (d && !d.inCar) call('gta2_dev_spawn_car', [JOBS[job].car, 2, 0, 0]);
+    spawnNear(JOBS[job].car).then((ok) => { if (!ok) shout('Fahrzeug konnte hier nicht erscheinen – geh auf eine freie Straße'); });
     if (job === 'swat') [1, 6, 5].forEach((k) => call('gta2_dev_give_weapon', [k, 99]));
     if (job === 'cop') call('gta2_dev_give_weapon', [0, 99]);
     mode = { kind: 'job', job, n: 0 };
@@ -342,9 +362,9 @@
     if (a === 'weapons') { [0, 1, 2, 3, 4, 5, 6, 8, 10].forEach((k) => call('gta2_dev_give_weapon', [k, 99])); shout('🔫 Waffen-Paket!'); close(); }
     else if (a === 'cash') { call('gta2_dev_add_cash', [50000]); shout('💵 +$50.000'); }
     else if (a === 'unlock') { shout(call('gta2_dev_unlock_areas') ? '🗺 Alle Bezirke frei!<br><small>Im Hauptmenü wählbar</small>' : 'Geht nur im Spiel'); }
-    else if (el.dataset.car) { if (d && d.inCar) shout('Erst aussteigen'); else if (call('gta2_dev_spawn_car', [+el.dataset.car, 2, 0, 0])) { shout('🚗 Auto ist da!'); close(); } else shout('Geht gerade nicht'); }
+    else if (el.dataset.car) { close(); spawnNear(+el.dataset.car).then((ok) => shout(ok ? '🚗 Fahrzeug ist da!' : 'Hier ist kein Platz – geh auf eine freie Straße')); }
     else if (a === 'gsave') { if (d && d.inCar && d.carModel >= 0) { ls.set('garage', d.carModel); shout('💾 Auto gemerkt'); render(); } else shout('Setz dich erst in ein Auto'); }
-    else if (a === 'gcall') { if (d && d.inCar) shout('Erst aussteigen'); else if (call('gta2_dev_spawn_car', [ls.get('garage', 10), 2, 0, 0])) { shout('🔑 Dein Auto ist da!'); close(); } }
+    else if (a === 'gcall') { close(); spawnNear(ls.get('garage', 10)).then((ok) => shout(ok ? '🔑 Dein Auto ist da!' : 'Hier ist kein Platz – geh auf eine freie Straße')); }
     else if (a === 'tp') { const ok = teleport(); if (ok) close(); }
     else if (a === 'love' || a === 'hate' || a === 'neutral') { const v = a === 'love' ? 100 : a === 'hate' ? -100 : 0; for (let g = 0; g < GANGS; g++) call('gta2_dev_set_respect', [g, v]); shout(a === 'love' ? '😇 Alle lieben dich' : a === 'hate' ? '😈 Alle hassen dich' : '😐 Neutral'); }
     else if (a === 'dstart') { if (daily.id === 'earn') { const r = rules(); dailyState.started = Date.now(); dailyState.base = r ? r.cash : 0; saveDaily(); shout('📅 Los! 3 Minuten'); close(); } }
