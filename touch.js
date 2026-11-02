@@ -28,7 +28,7 @@
 
   const css = document.createElement('style');
   css.textContent = `
-  body.tc-on #topnav{display:none!important}
+  body.tc-on #topnav,body.tc-on #tools{display:none!important}
   #tc{position:fixed;inset:0;z-index:9999;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
       font:600 12px system-ui,sans-serif;display:none;--sc:1;color:#fff}
   body.tc-on #tc{display:block}
@@ -94,7 +94,7 @@
     </div>
     <div class="stick z"><div class="knob"></div></div>
     <div class="pad z">
-      <div class="b z main" data-k="KeyL">Schuss</div>
+      <div class="b z main" data-k="KeyL" id="tc-fire">Kampf</div>
       <div class="b z mid k-enter" data-k="Enter" data-foot="Ein-<br>steigen" data-car="Aus-<br>steigen">Ein-<br>steigen</div>
       <div class="b z mid k-jump" data-k="Space" data-foot="Sprung" data-car="Hand-<br>bremse">Sprung</div>
       <div class="b z sm k-horn" data-k="KeyI">📯</div>
@@ -125,6 +125,18 @@
     root.classList.toggle('car', now === 'car');
     root.querySelectorAll('[data-foot]').forEach((el) => { el.innerHTML = now === 'car' ? el.dataset.car : el.dataset.foot; });
   }, 200);
+
+  // ---- Waffe: ohne Waffe heißt der Knopf „Kampf“ ----
+  const fireBtn = $('#tc-fire');
+  setInterval(() => {
+    let armed = false;
+    try {
+      const M = window.gta2 && window.gta2.Module;
+      if (M && ctx !== 'menu') { const q = M.ccall('gta2_dev_state', 'number', [], []); armed = new Int32Array(M.HEAPU8.buffer, q, 10)[8] >= 0; }
+    } catch {}
+    const label = armed || ctx === 'car' ? 'Schuss' : 'Kampf';
+    if (fireBtn.textContent !== label) fireBtn.textContent = label;
+  }, 300);
 
   // ---- Aufklappen ----
   const more = $('.more'), wpn = $('.wpn');
