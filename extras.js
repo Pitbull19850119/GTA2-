@@ -253,6 +253,7 @@
       <div class="tg"><div>${daily.text}<small>${dailyState.done ? '✅ Heute geschafft' : 'Fortschritt: ' + Math.floor(dailyState.progress) + ' / ' + daily.goal}</small></div>
         ${dailyState.done ? '' : `<button class="b" data-a="dstart">${daily.secs ? 'Start' : 'Läuft'}</button>`}</div>
       <h3>Einstellungen</h3>
+      <div class="tg"><div>🧭 Minikarte<small>Runde Karte links mit Gesundheits-Ring</small></div><div class="sw ${window.GTA2_map && window.GTA2_map.minimapOn ? 'on' : ''}" data-a="radar"></div></div>
       ${sw('noCops', '🚫 Keine Fahndung', 'Polizei sucht dich nie (in Jobs automatisch an)')}
       ${sw('god', '🛡 Unverwundbar', 'Du nimmst keinen Schaden')}
       ${sw('kids', '👶 Kinder-Modus', 'Kein Schießen und Schlagen – nur fahren und erkunden')}
@@ -291,6 +292,7 @@
     else if (a === 'love' || a === 'hate' || a === 'neutral') { const v = a === 'love' ? 100 : a === 'hate' ? -100 : 0; for (let g = 0; g < GANGS; g++) call('gta2_dev_set_respect', [g, v]); shout(a === 'love' ? '😇 Alle lieben dich' : a === 'hate' ? '😈 Alle hassen dich' : '😐 Neutral'); }
     else if (a === 'dstart') { if (daily.id === 'earn') { const r = rules(); dailyState.started = Date.now(); dailyState.base = r ? r.cash : 0; saveDaily(); shout('📅 Los! 3 Minuten'); close(); } }
     else if (el.dataset.j) { stopMode(); startJob(el.dataset.j); close(); }
+    else if (a === 'radar') { const m = window.GTA2_map; if (m) m.setMinimap(!m.minimapOn); render(); }
     else if (a === 'voice') { voice = !voice; ls.set('voice', voice); render(); }
     else if (el.dataset.m) {
       const m = el.dataset.m;
