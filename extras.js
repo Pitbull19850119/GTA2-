@@ -109,6 +109,8 @@
   const clearWanted = () => { const b = findPed(); if (!b) return false; new Int16Array(M().HEAPU8.buffer)[(b + 0x20A) >> 1] = 0; return true; };
   const setInvuln = () => { const b = findPed(); if (!b) return false; new Uint16Array(M().HEAPU8.buffer)[(b + 0x208) >> 1] = 60000; return true; };
   window.GTA2_clearWanted = clearWanted;
+  let hpCache = null, hpAt = 0;
+  window.GTA2_health = () => { const now = performance.now(); if (now - hpAt > 300) { hpAt = now; try { const b = single() ? findPed() : 0; hpCache = b ? new Int16Array(M().HEAPU8.buffer)[(b + 0x216) >> 1] : null; } catch { hpCache = null; } } return hpCache; };
 
   // ---------- Funk ----------
   let voice = ls.get('voice', true);

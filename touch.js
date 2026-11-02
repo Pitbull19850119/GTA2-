@@ -98,6 +98,7 @@
         <div class="s z" data-k="Escape">Menü</div>
         <div class="s z" data-k="KeyT">📻 Radio</div>
         <div class="s z" data-k="F5">💾 Speichern</div>
+        <div class="s z" id="tc-radar">🧭 Minikarte</div>
         <div class="s z" id="tc-tilt">📱 Neigen</div>
         <div class="s z" id="tc-edit">✥ Anpassen</div>
         <div class="s z" id="tc-toggle">⌨︎ ausblenden</div>
@@ -312,6 +313,12 @@
     if (tiltOn) { window.addEventListener('deviceorientation', onTilt); toast('Im Auto: neigen = lenken, fährt automatisch'); }
     else { window.removeEventListener('deviceorientation', onTilt); ['left', 'right', 'up'].forEach((n) => setDir(n, false, 'tilt')); }
   });
+
+  // ---- Minikarte ein/aus ----
+  const radarBtn = $('#tc-radar');
+  const radarSync = () => { const m = window.GTA2_map; radarBtn.classList.toggle('on', !!(m && m.minimapOn)); };
+  radarBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); const m = window.GTA2_map; if (m) { m.setMinimap(!m.minimapOn); radarSync(); toast(m.minimapOn ? 'Minikarte an' : 'Minikarte aus'); } });
+  setInterval(radarSync, 1000);
 
   // ---- Ausblenden ----
   const tog = $('#tc-toggle');

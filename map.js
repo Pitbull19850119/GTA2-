@@ -1208,7 +1208,8 @@ export class Gta2Map {
     const r = Math.round(document.body.classList.contains('tc-on') ? Math.min(78, Math.max(48, vp.h * 0.11)) : Math.min(105, Math.max(56, vp.h * 0.15))); // inner radius
     const border = Math.max(5, Math.round(r * 0.11));
     const touchUi = document.body.classList.contains('tc-on'); // Touch: unten Mitte, zwischen Stick und Knöpfen
-    const cx = touchUi ? vp.x + vp.w / 2 : vp.x + vp.w - r - border - 14, cy = vp.y + vp.h - r - border - 14;
+    const cx = touchUi ? vp.x + r + border + 18 : vp.x + vp.w - r - border - 14;
+    const cy = touchUi ? Math.min(vp.y + vp.h * 0.5 + 10, vp.y + vp.h - r - border - 230) : vp.y + vp.h - r - border - 14;
     // the radar canvas covers the circle and the markers on its rim; drawing uses page coordinates
     const extent = Math.ceil(r + border * 4 + 12);
     const left = Math.round(cx - extent), top = Math.round(cy - extent), size = extent * 2;
@@ -1254,6 +1255,16 @@ export class Gta2Map {
     ctx.lineWidth = border;
     ctx.strokeStyle = '#050505';
     ctx.stroke();
+    // Gesundheits-Ring links (wie bei späteren GTA-Teilen)
+    const hp = typeof window.GTA2_health === 'function' ? window.GTA2_health() : null;
+    if (hp != null && hp >= 0) {
+      const f = Math.max(0, Math.min(1, hp / 100));
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + border / 2, Math.PI / 2, Math.PI / 2 + Math.PI * f);
+      ctx.lineWidth = border * 0.7;
+      ctx.strokeStyle = f < 0.3 ? '#e2394b' : '#43a5c4';
+      ctx.stroke();
+    }
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.lineWidth = 1;
