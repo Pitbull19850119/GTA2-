@@ -62,13 +62,15 @@ in vec2 vUv;
 in vec4 vColour;
 uniform sampler2D uTexture;
 uniform int uBlend;
-out vec4 outColour;
+layout(location = 0) out vec4 outColour;
+layout(location = 1) out vec4 outDepth;  // GTA2 Pocket: Tiefe (rhw) für Schatten/AO
 void main() {
   vec4 t = texture(uTexture, vUv);
   if (t.a < 0.5) discard;                 // palette colour 0 is transparent
   vec3 rgb = t.rgb * vColour.rgb;         // texture * diffuse
   float a = uBlend == 1 ? t.a * vColour.a : 1.0;
   outColour = vec4(rgb, a);
+  outDepth = uBlend == 0 ? vec4(gl_FragCoord.w, 0.0, 0.0, 1.0) : vec4(0.0);
 }`;
 
 const POST_VS = `#version 300 es
@@ -79,29 +81,51 @@ void main() {
   gl_Position = vec4(p, 0.0, 1.0);
 }`;
 
-// GTA2 Pocket: moderne Nachbearbeitung (Leuchten, Farben, Schärfe, Vignette, Tonemapping)
+// GTA2 Pocket: realistischere Beleuchtung aus der Tiefe: Gebäudeschatten, Umgebungsverdeckung (AO), leichtes Leuchten
 const POST_FS = `#version 300 es
-precision mediump float;
+precision highp float;
 in vec2 vUv;
 uniform sampler2D uScene;
-uniform vec2 uPx;
-uniform float uLevel; // 1 = Modern, 2 = Ultra
+uniform sampler2D uDepth;
+uniform vec2 uPx;      // 1 / Canvas-Größe
+uniform float uScale;  // Canvas-Pixel pro Referenzpixel
+uniform float uLevel;  // 1 = Modern, 2 = Ultra
+uniform int uHasDepth;
 out vec4 outColour;
-vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
+float dist(vec2 uv) { float r = texture(uDepth, uv).r; return r > 0.01 ? 1.0 / r : -1.0; }
 void main() {
   vec3 c = texture(uScene, vUv).rgb;
+  if (uHasDepth == 1) {
+    float d = dist(vUv);
+    if (d > 0.0) {
+      // Sonne von oben links: Schatten fallen nach unten rechts
+      vec2 dir = normalize(vec2(-1.0, 1.0)) * uPx * (3.5 * uScale);
+      float sh = 0.0;
+      for (int k = 1; k <= 18; k++) {
+        float o = dist(vUv + dir * float(k));
+        if (o > 0.0) sh = max(sh, smoothstep(0.0, 0.25, (d - o) - float(k) * 0.2));
+      }
+      // Umgebungsverdeckung: dunkler, wo es neben höheren Flächen liegt
+      float occ = 0.0;
+      float rad = 7.0 * uScale;
+      for (int i = 0; i < 8; i++) {
+        float ang = float(i) * 0.785398;
+        vec2 off = vec2(cos(ang), sin(ang)) * uPx * rad;
+        float o = dist(vUv + off), o2 = dist(vUv + off * 0.5);
+        if (o > 0.0) occ += smoothstep(0.05, 0.8, d - o);
+        if (o2 > 0.0) occ += smoothstep(0.05, 0.8, d - o2);
+      }
+      occ /= 16.0;
+      float shade = (1.0 - sh * (0.38 + 0.1 * uLevel)) * (1.0 - occ * (0.5 + 0.15 * uLevel));
+      c *= shade;
+    }
+  }
+  // feine Schärfe und dezentes Leuchten nur sehr heller Stellen (Lichter, Neon, Feuer)
   vec3 n = texture(uScene, vUv + vec2(uPx.x, 0.0)).rgb + texture(uScene, vUv - vec2(uPx.x, 0.0)).rgb
          + texture(uScene, vUv + vec2(0.0, uPx.y)).rgb + texture(uScene, vUv - vec2(0.0, uPx.y)).rgb;
-  c += (c - n * 0.25) * (0.18 * uLevel);                                   // Schärfe
-  vec3 b = textureLod(uScene, vUv, 3.0).rgb * 0.45 + textureLod(uScene, vUv, 4.0).rgb * 0.35 + textureLod(uScene, vUv, 5.5).rgb * 0.3;
-  b = max(b - 0.55, 0.0);
-  c += b * (0.45 + 0.35 * uLevel);                                            // Leuchten (Bloom)
-  float l = dot(c, vec3(0.299, 0.587, 0.114));
-  c = mix(vec3(l), c, 1.1 + 0.06 * uLevel);                                // Sättigung
-  c *= mix(vec3(0.97, 1.0, 1.05), vec3(1.04, 1.0, 0.95), smoothstep(0.15, 0.75, l)); // kühle Schatten, warme Lichter
-  c = mix(c, aces(c * 1.15), 0.5 + 0.15 * uLevel);                                      // Tonemapping
-  float v = smoothstep(1.05, 0.3, length((vUv - 0.5) * vec2(1.15, 1.0)));
-  c *= mix(1.0, v, 0.22 + 0.08 * uLevel);                                    // Vignette
+  c += (texture(uScene, vUv).rgb - n * 0.25) * 0.12 * uLevel;
+  vec3 b = textureLod(uScene, vUv, 3.0).rgb * 0.5 + textureLod(uScene, vUv, 5.0).rgb * 0.5;
+  c += max(b - 0.7, 0.0) * (0.35 + 0.35 * uLevel);
   outColour = vec4(c, 1.0);
 }`;
 
@@ -166,6 +190,14 @@ export class Gta2Renderer {
       this.postProgram = pp;
       this.uPx = gl.getUniformLocation(pp, 'uPx');
       this.uLevel = gl.getUniformLocation(pp, 'uLevel');
+      this.uScaleP = gl.getUniformLocation(pp, 'uScale');
+      this.uHasDepth = gl.getUniformLocation(pp, 'uHasDepth');
+      gl.useProgram(pp);
+      gl.uniform1i(gl.getUniformLocation(pp, 'uScene'), 0);
+      gl.uniform1i(gl.getUniformLocation(pp, 'uDepth'), 1);
+      gl.useProgram(program);
+      this.depthOk = !!gl.getExtension('EXT_color_buffer_float');
+      this.depthTex = gl.createTexture();
       this.postVao = gl.createVertexArray();
       this.fbo = gl.createFramebuffer();
       this.fboTex = gl.createTexture();
@@ -262,6 +294,17 @@ export class Gta2Renderer {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.fboTex, 0);
+        if (this.depthOk) {
+          gl.bindTexture(gl.TEXTURE_2D, this.depthTex);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, W, H, 0, gl.RED, gl.HALF_FLOAT, null);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, this.depthTex, 0);
+          gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+          if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) { this.depthOk = false; gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, null, 0); gl.drawBuffers([gl.COLOR_ATTACHMENT0]); }
+        }
         this.fboW = W; this.fboH = H;
       }
       gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
@@ -270,8 +313,9 @@ export class Gta2Renderer {
     }
     // The bars outside the view keep whatever the last wider frame left there.
     gl.disable(gl.SCISSOR_TEST);
-    gl.clearColor(0, 0, 0, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    const mrt = usePost && this.depthOk;
+    if (mrt) { gl.clearBufferfv(gl.COLOR, 0, [0, 0, 0, 1]); gl.clearBufferfv(gl.COLOR, 1, [0, 0, 0, 0]); }
+    else { gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT); }
     gl.viewport(vp.x, vp.y, vp.w, vp.h);
     gl.useProgram(this.program);
     gl.bindVertexArray(this.vao);
@@ -299,8 +343,9 @@ export class Gta2Renderer {
         } else {
           gl.scissor(0, 0, this.canvas.width, this.canvas.height);
         }
-        gl.clearColor((colour & 255) / 255, ((colour >> 8) & 255) / 255, ((colour >> 16) & 255) / 255, 1);
-        gl.clear(gl.COLOR_BUFFER_BIT);
+        const cc = [(colour & 255) / 255, ((colour >> 8) & 255) / 255, ((colour >> 16) & 255) / 255, 1];
+        if (mrt) { gl.clearBufferfv(gl.COLOR, 0, cc); gl.clearBufferfv(gl.COLOR, 1, [0, 0, 0, 0]); }
+        else { gl.clearColor(cc[0], cc[1], cc[2], 1); gl.clear(gl.COLOR_BUFFER_BIT); }
         gl.disable(gl.SCISSOR_TEST);
         continue;
       }
@@ -322,6 +367,11 @@ export class Gta2Renderer {
       gl.useProgram(this.postProgram);
       gl.uniform2f(this.uPx, 1 / this.canvas.width, 1 / this.canvas.height);
       gl.uniform1f(this.uLevel, this.post);
+      gl.uniform1f(this.uScaleP, this.scale || 1);
+      gl.uniform1i(this.uHasDepth, mrt ? 1 : 0);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, mrt ? this.depthTex : null);
+      gl.activeTexture(gl.TEXTURE0);
       gl.bindVertexArray(this.postVao);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.useProgram(this.program);
